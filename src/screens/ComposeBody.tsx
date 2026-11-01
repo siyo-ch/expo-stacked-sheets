@@ -18,7 +18,7 @@ import { useWindowDimensions } from 'react-native';
 
 import { ComposeFab } from '../components/ComposeFab';
 import { type Draft, updateDraft, useDrafts } from '../navigation/draftStore';
-import { MOTION_DURATION, PEEK, dismissTravel } from '../navigation/sheetLayout';
+import { MOTION_DURATION, dismissTravel } from '../navigation/sheetLayout';
 import { requestCloseTop, useMotion } from '../navigation/sheetMotion';
 import { FROM_EMAIL, colors } from '../theme';
 
@@ -193,11 +193,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    height: PEEK,
+    height: 54,
     justifyContent: 'center',
   },
   dragHandle: {
-    height: PEEK,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 56,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   close: {
     position: 'absolute',
     left: 8,
-    top: (PEEK - 44) / 2,
+    top: 5,
     width: 44,
     height: 44,
     alignItems: 'center',

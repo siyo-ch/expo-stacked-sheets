@@ -12,7 +12,10 @@ import { sheetFrame } from '../navigation/sheetLayout';
 import { useMotion } from '../navigation/sheetMotion';
 import { colors } from '../theme';
 
-const HAIRLINE = StyleSheet.hairlineWidth;
+function progressOf(presented: SharedValue<number>, drag: SharedValue<number>) {
+  'worklet';
+  return Math.max(0, presented.value - drag.value);
+}
 
 function useFrameStyle(
   index: number,
@@ -22,29 +25,29 @@ function useFrameStyle(
   topInset: number,
 ) {
   return useAnimatedStyle(() => {
-    const progress = Math.max(0, presented.value - drag.value);
     const frame = sheetFrame({
-      presented: progress,
+      presented: progressOf(presented, drag),
       index,
       height,
       topInset,
     });
-    // Shift top and bottom together so the sheet slides without squashing,
-    // and the settled card always reaches the bottom of the screen.
-    const offset = frame.top + frame.hidden;
+    // Screen-space top keeps the rise vertical. rotateX is only the resting lean.
     return {
-      top: offset,
-      bottom: -frame.hidden,
+      top: frame.top + frame.hidden,
+      height: frame.face,
+      left: frame.inset,
+      right: frame.inset,
       borderTopLeftRadius: frame.radius,
       borderTopRightRadius: frame.radius,
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-      borderTopWidth: frame.radius > 0.5 ? HAIRLINE : 0,
-      transform: [{ scale: frame.scale }],
-      opacity: 1,
-      shadowOpacity: frame.radius > 1 || index > 0 ? 0.16 : 0,
+      backgroundColor: `rgba(255,255,255,${frame.fill})`,
+      transform: [
+        { perspective: frame.perspective },
+        { rotateX: `${frame.rotateX}deg` },
+        { scale: frame.scale },
+      ],
+      shadowOpacity: frame.radius > 1 ? 0.2 : 0,
     };
-  }, [drag, height, index, presented, topInset]);
+  });
 }
 
 export function StackedCard({
@@ -61,9 +64,8 @@ export function StackedCard({
   const front = index === drafts.length;
   const frameStyle = useFrameStyle(index, presented, drag, height, insets.top);
   const clipStyle = useAnimatedStyle(() => {
-    const progress = Math.max(0, presented.value - drag.value);
     const frame = sheetFrame({
-      presented: progress,
+      presented: progressOf(presented, drag),
       index,
       height,
       topInset: insets.top,
@@ -72,17 +74,21 @@ export function StackedCard({
       borderTopLeftRadius: frame.radius,
       borderTopRightRadius: frame.radius,
     };
-  }, [drag, height, index, insets.top, presented]);
-  const dimStyle = useAnimatedStyle(() => {
-    const progress = Math.max(0, presented.value - drag.value);
+  });
+  const fadeStyle = useAnimatedStyle(() => {
     const frame = sheetFrame({
-      presented: progress,
+      presented: progressOf(presented, drag),
       index,
       height,
       topInset: insets.top,
     });
-    return { opacity: frame.dim };
-  }, [drag, height, index, insets.top, presented]);
+    const band = Math.max(frame.peek, 1);
+    return {
+      top: band * 0.28,
+      height: band * 0.86,
+      opacity: frame.dim,
+    };
+  });
 
   return (
     <Animated.View
@@ -93,15 +99,13 @@ export function StackedCard({
       importantForAccessibility={front ? 'auto' : 'no-hide-descendants'}
       style={[
         styles.outer,
-        { zIndex: index, elevation: index === 0 ? 2 : 8, transformOrigin: 'top center' },
+        { zIndex: index, elevation: index === 0 ? 2 : 10 },
         frameStyle,
       ]}
     >
       <Animated.View style={[styles.inner, clipStyle]}>
         {children}
-        {index === 0 ? (
-          <Animated.View pointerEvents="none" style={[styles.dim, dimStyle]} />
-        ) : null}
+        <Animated.View pointerEvents="none" style={[styles.fade, fadeStyle]} />
       </Animated.View>
     </Animated.View>
   );
@@ -110,23 +114,23 @@ export function StackedCard({
 const styles = StyleSheet.create({
   outer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    backgroundColor: colors.card,
-    borderTopColor: 'rgba(0,0,0,0.08)',
     borderCurve: 'continuous',
+    transformOrigin: 'top center',
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: { width: 0, height: 10 },
     shadowRadius: 16,
   },
   inner: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: colors.card,
     borderCurve: 'continuous',
+    backgroundColor: 'transparent',
   },
-  dim: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: '#000000',
+  fade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(214,214,218,0.42) 34%, rgba(154,154,160,0.94) 100%)',
   },
 });
