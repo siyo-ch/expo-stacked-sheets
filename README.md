@@ -4,6 +4,9 @@ An Expo prototype of Mail's draft workflow: a flat editor, a bottom draft bar,
 and a scrollable card overview. Sample messages only; it does not connect to a
 mail server or send messages. Drafts survive switching and minimizing within the
 current app session, but are not saved across app restarts.
+On launch, one empty draft is already minimized below the inbox to match the
+reference. Its white capsule sits at the bottom of the screen, separated from
+the rounded inbox by a black gap. Tap it to resume, or close it in the editor.
 
 ## Run
 

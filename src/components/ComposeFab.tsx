@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { openCompose } from '../navigation/sheetMotion';
 import { colors } from '../theme';
 
-export function ComposeFab({ bottomOffset = 0 }: { bottomOffset?: number }) {
+export function ComposeFab({ bottomInset = 0 }: { bottomInset?: number }) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -16,7 +16,7 @@ export function ComposeFab({ bottomOffset = 0 }: { bottomOffset?: number }) {
       onPress={openCompose}
       style={({ pressed }) => [
         styles.fab,
-        { bottom: Math.max(insets.bottom, 12) + 18 + bottomOffset },
+        { bottom: bottomInset ? bottomInset + 12 : Math.max(insets.bottom, 12) + 18 },
         pressed && styles.pressed,
       ]}
     >

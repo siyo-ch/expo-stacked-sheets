@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
 import { MailStack } from '../components/MailStack';
+import { initialNavigationState } from './initialMailSession';
 import {
   SheetMotionProvider,
   navigationRef,
@@ -33,6 +34,7 @@ export function RootNavigator() {
         <NavigationContainer
           ref={navigationRef}
           theme={navigationTheme}
+          initialState={initialNavigationState}
           onStateChange={onNavigationStateChange}
         >
           <Stack.Navigator

@@ -41,6 +41,11 @@ export function MailStack() {
   const { mode, activeId } = useMailView();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // The reference's capsule includes the home-indicator area, rather than
+  // floating above the safe area. Leave a black seam below the shortened inbox.
+  const dockHeight = Math.max(74, insets.bottom + 40);
+  const dockBottom = Platform.OS === 'ios' ? 2 : Math.max(insets.bottom, 2);
+  const dockSpace = ids.length ? dockHeight + dockBottom + 6 : 0;
   const { overview, scroll, editor, count } = useMotion();
   useEffect(() => {
     count.set(withSpring(ids.length, SPRING));
@@ -112,7 +117,12 @@ export function MailStack() {
       <GestureDetector gesture={pan}>
         <View style={StyleSheet.absoluteFill}>
           <Animated.View
-            style={[styles.mailbox, inboxStyle]}
+            style={[
+              styles.mailbox,
+              { bottom: dockSpace },
+              ids.length > 0 && styles.mailboxWithDraft,
+              inboxStyle,
+            ]}
             pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
             aria-hidden={mode !== 'inbox'}
             accessibilityElementsHidden={mode !== 'inbox'}
@@ -146,16 +156,21 @@ export function MailStack() {
         pointerEvents="none"
         style={[styles.statusBarCover, { height: insets.top }, depthStyle]}
       />
-      {mode === 'inbox' && <ComposeFab bottomOffset={ids.length ? 68 : 0} />}
+      {mode === 'inbox' && <ComposeFab bottomInset={dockSpace} />}
       {ids.length > 0 && (
         <Animated.View
           pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
           aria-hidden={mode !== 'inbox'}
           accessibilityElementsHidden={mode !== 'inbox'}
-          style={[styles.dock, { bottom: Math.max(insets.bottom, 8) }, dockStyle]}
+          style={[
+            styles.dock,
+            { bottom: dockBottom, height: dockHeight },
+            dockStyle,
+          ]}
         >
           <Pressable
             accessibilityRole="button"
+            testID="draft-dock"
             accessibilityLabel={
               ids.length === 1 ? '继续编辑草稿' : `查看 ${ids.length} 份草稿`
             }
@@ -188,6 +203,7 @@ const styles = StyleSheet.create({
     transformOrigin: '50% 0%',
   },
   dim: { ...StyleSheet.absoluteFill, backgroundColor: '#000' },
+  mailboxWithDraft: { borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
   depthShade: {
     ...StyleSheet.absoluteFill,
     backgroundImage:
@@ -203,12 +219,11 @@ const styles = StyleSheet.create({
   },
   dock: {
     position: 'absolute',
-    left: 12,
-    right: 12,
-    height: 54,
-    borderRadius: 27,
+    left: 16,
+    right: 16,
+    borderRadius: 999,
     backgroundColor: '#FFF',
   },
   dockButton: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  dockTitle: { fontSize: 16, fontWeight: '600', color: '#111' },
+  dockTitle: { fontSize: 17, fontWeight: '700', color: '#000' },
 });
