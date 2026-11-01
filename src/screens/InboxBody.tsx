@@ -19,7 +19,7 @@ import { useWindowDimensions } from 'react-native';
 import { ComposeFab } from '../components/ComposeFab';
 import { MAILS, type Mail } from '../data/mails';
 import { useDrafts } from '../navigation/draftStore';
-import { sheetFrame } from '../navigation/sheetLayout';
+import { PEEK, sheetFrame } from '../navigation/sheetLayout';
 import { openCompose, useMotion } from '../navigation/sheetMotion';
 import { colors } from '../theme';
 
@@ -41,11 +41,18 @@ export function InboxBody() {
       height,
       topInset: insets.top,
     });
+    const tucked = Math.max(insets.top, 1);
     return {
       paddingTop: interpolate(
         frame.top,
-        [0, Math.max(insets.top, 1)],
+        [0, tucked],
         [insets.top, 6],
+        Extrapolation.CLAMP,
+      ),
+      height: interpolate(
+        frame.top,
+        [0, tucked],
+        [insets.top + 52, PEEK],
         Extrapolation.CLAMP,
       ),
     };
@@ -195,9 +202,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   header: {
-    minHeight: 58,
+    minHeight: PEEK,
     justifyContent: 'flex-end',
     paddingBottom: 8,
+    overflow: 'hidden',
   },
   back: {
     position: 'absolute',

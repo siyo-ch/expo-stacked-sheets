@@ -1,10 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { runOnJS, useAnimatedReaction } from 'react-native-reanimated';
 
 import { useDrafts } from '../navigation/draftStore';
-import { useMotion } from '../navigation/sheetMotion';
+import { presentDraftCount, useMotion } from '../navigation/sheetMotion';
 import { colors } from '../theme';
 import { ComposeBody } from '../screens/ComposeBody';
 import { InboxBody } from '../screens/InboxBody';
@@ -12,6 +12,16 @@ import { StackedCard } from './StackedCard';
 
 export function MailStack() {
   const drafts = useDrafts();
+  const committed = useRef(drafts.length);
+
+  // After the new card's animated style is attached, so the sheet starts
+  // offscreen and rises instead of snapping to its rest position.
+  useEffect(() => {
+    if (drafts.length > committed.current) {
+      presentDraftCount(drafts.length);
+    }
+    committed.current = drafts.length;
+  }, [drafts.length]);
 
   return (
     <View style={styles.root}>
@@ -46,8 +56,7 @@ function StackStatusBar() {
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.backdrop,
-    overflow: 'hidden',
   },
 });

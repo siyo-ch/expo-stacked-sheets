@@ -12,13 +12,13 @@ import {
   View,
 } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import { runOnJS, withTiming } from 'react-native-reanimated';
+import { Easing, runOnJS, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWindowDimensions } from 'react-native';
 
 import { ComposeFab } from '../components/ComposeFab';
 import { type Draft, updateDraft, useDrafts } from '../navigation/draftStore';
-import { dismissTravel } from '../navigation/sheetLayout';
+import { MOTION_DURATION, PEEK, dismissTravel } from '../navigation/sheetLayout';
 import { requestCloseTop, useMotion } from '../navigation/sheetMotion';
 import { FROM_EMAIL, colors } from '../theme';
 
@@ -56,7 +56,10 @@ export function ComposeBody({ draft }: { draft: Draft }) {
         runOnJS(requestCloseTop)();
         return;
       }
-      drag.value = withTiming(0, { duration: 260 });
+      drag.value = withTiming(0, {
+        duration: MOTION_DURATION,
+        easing: Easing.out(Easing.cubic),
+      });
     },
   });
 
@@ -190,11 +193,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    height: 54,
+    height: PEEK,
     justifyContent: 'center',
   },
   dragHandle: {
-    height: 54,
+    height: PEEK,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 56,
@@ -207,7 +210,7 @@ const styles = StyleSheet.create({
   close: {
     position: 'absolute',
     left: 8,
-    top: 5,
+    top: (PEEK - 44) / 2,
     width: 44,
     height: 44,
     alignItems: 'center',

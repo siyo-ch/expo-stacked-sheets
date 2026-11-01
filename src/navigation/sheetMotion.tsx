@@ -18,13 +18,15 @@ import {
   getDraftCount,
   trimDrafts,
 } from './draftStore';
+import { MOTION_DURATION, MOTION_EASING } from './sheetLayout';
 import type { RootStackParamList } from './types';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
-const TIMING = {
-  duration: 440,
-  easing: Easing.out(Easing.cubic),
+/** Shared push/dismiss timing. Duration and easing come from `sheetLayout`. */
+export const SHEET_TIMING = {
+  duration: MOTION_DURATION,
+  easing: MOTION_EASING === 'ease-out' ? Easing.out(Easing.cubic) : Easing.linear,
 };
 
 type MotionBridge = {
@@ -57,8 +59,8 @@ function animateTo(count: number, after?: () => void) {
   if (!presented || !drag) return;
   const token = ++generation;
   pending = after ?? null;
-  drag.value = withTiming(0, TIMING);
-  presented.value = withTiming(count, TIMING, (finished) => {
+  drag.value = withTiming(0, SHEET_TIMING);
+  presented.value = withTiming(count, SHEET_TIMING, (finished) => {
     'worklet';
     if (finished) {
       runOnJS(finishAnimation)(token);
@@ -85,14 +87,23 @@ export function openCompose() {
   if (!navigationRef.isReady()) return;
   const draft = createDraft();
   addDraft(draft);
-  animateTo(getDraftCount());
   navigationRef.dispatch(StackActions.push('Compose', { draftId: draft.id }));
+}
+
+/**
+ * Run after the new card has committed, so its first frame is the offscreen
+ * pose and `presented` can then rise. Starting the timing before that mount
+ * snaps the sheet to its rest position.
+ */
+export function presentDraftCount(count: number) {
+  if (closing) return;
+  animateTo(count);
 }
 
 export function requestCloseTop() {
   if (closing) return;
   if (!navigationRef.isReady() || !navigationRef.canGoBack()) {
-    if (bridge.drag) bridge.drag.value = withTiming(0, { duration: 240 });
+    if (bridge.drag) bridge.drag.value = withTiming(0, SHEET_TIMING);
     return;
   }
   closing = true;
@@ -114,7 +125,6 @@ export function onNavigationStateChange(state: NavigationState | undefined) {
     for (let index = 0; index < missing; index += 1) {
       addDraft(createDraft());
     }
-    animateTo(getDraftCount());
   }
 }
 

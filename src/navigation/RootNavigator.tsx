@@ -1,8 +1,4 @@
-import {
-  DefaultTheme,
-  NavigationContainer,
-  useIsFocused,
-} from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
@@ -26,47 +22,55 @@ const navigationTheme = {
   },
 };
 
-function RouteShell() {
-  const focused = useIsFocused();
-  if (!focused) {
-    return <View style={styles.blank} />;
-  }
-  return <MailStack />;
+function HistoryScreen() {
+  return <View style={styles.blank} />;
 }
 
 export function RootNavigator() {
   return (
     <SheetMotionProvider>
-      <NavigationContainer
-        ref={navigationRef}
-        theme={navigationTheme}
-        onStateChange={onNavigationStateChange}
-      >
-        <Stack.Navigator
-          initialRouteName="Inbox"
-          screenOptions={{
-            headerShown: false,
-            animation: 'none',
-            gestureEnabled: false,
-            fullScreenGestureEnabled: false,
-            freezeOnBlur: false,
-            contentStyle: styles.scene,
-          }}
+      <View style={styles.frame}>
+        <NavigationContainer
+          ref={navigationRef}
+          theme={navigationTheme}
+          onStateChange={onNavigationStateChange}
         >
-          <Stack.Screen name="Inbox" component={RouteShell} />
-          <Stack.Screen name="Compose" component={RouteShell} />
-        </Stack.Navigator>
-      </NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Inbox"
+            screenOptions={{
+              headerShown: false,
+              animation: 'none',
+              gestureEnabled: false,
+              fullScreenGestureEnabled: false,
+              freezeOnBlur: false,
+              contentStyle: styles.scene,
+            }}
+          >
+            <Stack.Screen name="Inbox" component={HistoryScreen} />
+            <Stack.Screen name="Compose" component={HistoryScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+        <View style={styles.stage} pointerEvents="box-none">
+          <MailStack />
+        </View>
+      </View>
     </SheetMotionProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  frame: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
   blank: {
     flex: 1,
     backgroundColor: '#000000',
   },
   scene: {
     backgroundColor: '#000000',
+  },
+  stage: {
+    ...StyleSheet.absoluteFill,
   },
 });

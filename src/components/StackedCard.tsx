@@ -35,11 +35,14 @@ function useFrameStyle(
     return {
       top: offset,
       bottom: -frame.hidden,
-      borderRadius: frame.radius,
-      borderWidth: frame.radius > 0.5 ? HAIRLINE : 0,
+      borderTopLeftRadius: frame.radius,
+      borderTopRightRadius: frame.radius,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+      borderTopWidth: frame.radius > 0.5 ? HAIRLINE : 0,
       transform: [{ scale: frame.scale }],
-      opacity: index === 0 || frame.appear > 0.03 ? 1 : 0,
-      shadowOpacity: frame.radius > 1 ? 0.18 : 0,
+      opacity: 1,
+      shadowOpacity: frame.radius > 1 || index > 0 ? 0.16 : 0,
     };
   }, [drag, height, index, presented, topInset]);
 }
@@ -65,7 +68,20 @@ export function StackedCard({
       height,
       topInset: insets.top,
     });
-    return { borderRadius: frame.radius };
+    return {
+      borderTopLeftRadius: frame.radius,
+      borderTopRightRadius: frame.radius,
+    };
+  }, [drag, height, index, insets.top, presented]);
+  const dimStyle = useAnimatedStyle(() => {
+    const progress = Math.max(0, presented.value - drag.value);
+    const frame = sheetFrame({
+      presented: progress,
+      index,
+      height,
+      topInset: insets.top,
+    });
+    return { opacity: frame.dim };
   }, [drag, height, index, insets.top, presented]);
 
   return (
@@ -77,11 +93,16 @@ export function StackedCard({
       importantForAccessibility={front ? 'auto' : 'no-hide-descendants'}
       style={[
         styles.outer,
-        { zIndex: index, elevation: 8 + index * 4, transformOrigin: 'top center' },
+        { zIndex: index, elevation: index === 0 ? 2 : 8, transformOrigin: 'top center' },
         frameStyle,
       ]}
     >
-      <Animated.View style={[styles.inner, clipStyle]}>{children}</Animated.View>
+      <Animated.View style={[styles.inner, clipStyle]}>
+        {children}
+        {index === 0 ? (
+          <Animated.View pointerEvents="none" style={[styles.dim, dimStyle]} />
+        ) : null}
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -92,14 +113,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.card,
-    borderColor: 'rgba(0,0,0,0.08)',
+    borderTopColor: 'rgba(0,0,0,0.08)',
+    borderCurve: 'continuous',
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -4 },
+    shadowRadius: 16,
   },
   inner: {
     flex: 1,
     overflow: 'hidden',
     backgroundColor: colors.card,
+    borderCurve: 'continuous',
+  },
+  dim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: '#000000',
   },
 });
