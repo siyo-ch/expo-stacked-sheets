@@ -193,7 +193,7 @@ function MailRow({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.card,
   },
   header: {
     minHeight: 52,

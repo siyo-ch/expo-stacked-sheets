@@ -39,13 +39,14 @@ function useFrameStyle(
       right: frame.inset,
       borderTopLeftRadius: frame.radius,
       borderTopRightRadius: frame.radius,
-      backgroundColor: `rgba(255,255,255,${frame.fill})`,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+      backgroundColor: '#FFFFFF',
       transform: [
         { perspective: frame.perspective },
         { rotateX: `${frame.rotateX}deg` },
-        { scale: frame.scale },
       ],
-      shadowOpacity: frame.radius > 1 ? 0.2 : 0,
+      shadowOpacity: frame.radius > 1 ? 0.08 : 0,
     };
   });
 }
@@ -84,8 +85,8 @@ export function StackedCard({
     });
     const band = Math.max(frame.peek, 1);
     return {
-      top: band * 0.28,
-      height: band * 0.86,
+      top: band * 0.58,
+      height: band * 0.48,
       opacity: frame.dim,
     };
   });
@@ -131,6 +132,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundImage:
-      'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(214,214,218,0.42) 34%, rgba(154,154,160,0.94) 100%)',
+      'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(226,226,228,0.12) 45%, rgba(206,206,210,0.38) 100%)',
   },
 });

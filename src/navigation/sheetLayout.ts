@@ -2,35 +2,39 @@
  * Shared stack geometry for the mail draft deck.
  *
  * iOS and Android both feed the same Reanimated progress (settled draft count,
- * minus drag) through `sheetFrame`. Perspective, resting lean, peek, radius,
- * and the 300ms ease-out live here.
+ * minus drag) through `sheetFrame`.
  *
- * The lean is the resting pose: each layer's rotateX depends only on how deep
- * it sits. A new draft's depth stays 0 while it rises, so it keeps the front
- * angle and slides up. Covered cards pick up a few more degrees of lean as
- * another draft is added. That is not a flip; the pivot is the top edge.
+ * Resting pose, measured on a 1024pt screen: card tops sit near 160, 465, and
+ * 770 (about 30% of the screen per layer) on every phone, with no short-screen
+ * squeeze. Each face is a full screen tall, so it runs past the bottom edge and
+ * the next card's top covers it. There is no gap to the backdrop.
+ *
+ * The lean is a few degrees around the top edge. Across one layer the top of
+ * the card stays about 94–97% as wide as the face below it. A new draft holds
+ * the front angle and rises; it does not spin.
  */
 
-/** Distance between successive card tops, before a short screen compresses it. */
-export const PEEK = 300;
-/** Projection distance. Smaller reads as a stronger taper. */
-export const PERSPECTIVE = 900;
+/** Reference screen the top offsets were measured on. */
+export const REF_SCREEN = 1024;
+/** Inbox top with two drafts open, on `REF_SCREEN`. */
+export const REF_FIRST = 160;
+/** Distance between card tops, on `REF_SCREEN` (465 - 160, 770 - 465). */
+export const REF_STEP = 305;
+/** Projection distance. Large enough that a few degrees only taper slightly. */
+export const PERSPECTIVE = 800;
 /** Front sheet lean. It rises at this angle and does not spin in. */
-export const ROTATE_FRONT = 28;
+export const ROTATE_FRONT = 8;
 /** Inbox lean with two drafts open. Depth 1 sits halfway between the two. */
-export const ROTATE_DEEP = 60;
-/** Top corner radius once a card is in the deck. */
+export const ROTATE_DEEP = 10;
+/** Top corner radius. The front card must show the whole curve. */
 export const RADIUS = 46;
-/** Horizontal inset so the shorter top edge sits inside the black backdrop. */
-export const SIDE_INSET = 28;
-/** White alpha of the inbox once a draft covers it. */
-export const INBOX_FILL = 0.84;
+/** A few points of side inset. Perspective opens the face back toward the screen edge. */
+export const SIDE_INSET = 10;
 /** Push and dismiss duration, in milliseconds. */
 export const MOTION_DURATION = 300;
 /** Push and dismiss easing. `sheetMotion` builds the Reanimated curve from this. */
 export const MOTION_EASING = 'ease-out' as const;
 
-const TOP_GAP = 10;
 const TILT_DEPTH = 2;
 
 export type SheetFrame = {
@@ -38,21 +42,19 @@ export type SheetFrame = {
   top: number;
   /** Extra downward offset while the card is entering or leaving. */
   hidden: number;
-  /** Height of the tilted face. The front face runs to the bottom of the screen. */
+  /** Face height. A full screen tall, so the card continues past the bottom. */
   face: number;
   scale: number;
   radius: number;
   appear: number;
-  /** Grey dissolve over the lower part of a covered card. */
+  /** Strength of the light grey dissolve on a covered card. */
   dim: number;
   /** Resting lean in degrees, pivoted at the top edge. */
   rotateX: number;
   perspective: number;
-  /** White fill alpha. The inbox goes translucent; drafts stay solid. */
-  fill: number;
-  inset: number;
   /** On-screen step down to the next card. Places the grey dissolve. */
   peek: number;
+  inset: number;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -71,16 +73,12 @@ function tilt(depth: number) {
   return ROTATE_FRONT + (ROTATE_DEEP - ROTATE_FRONT) * t;
 }
 
-export function stackMetrics(height: number, topInset: number, presented: number) {
+export function stackMetrics(height: number, _topInset: number, presented: number) {
   'worklet';
   const count = Math.max(presented, 0);
-  const firstTop = topInset + TOP_GAP;
-  const minFront = Math.max(220, Math.min(height * 0.32, 320));
-  const maxFrontTop = Math.max(firstTop + 1, height - minFront);
-  const natural = firstTop + count * PEEK;
-  const frontRest = count > 0.001 ? Math.min(natural, maxFrontTop) : firstTop;
-  const span = Math.max(0, frontRest - firstTop);
-  const peek = count > 0.001 ? Math.min(PEEK, span / count) : 0;
+  const firstTop = (height * REF_FIRST) / REF_SCREEN;
+  const peek = (height * REF_STEP) / REF_SCREEN;
+  const frontRest = firstTop + count * peek;
   return { firstTop, frontRest, peek };
 }
 
@@ -114,9 +112,8 @@ export function sheetFrame(input: {
       dim: 0,
       rotateX: 0,
       perspective: PERSPECTIVE,
-      fill: 1,
-      inset: 0,
       peek: 0,
+      inset: 0,
     };
   }
 
@@ -125,31 +122,22 @@ export function sheetFrame(input: {
   const blend = clamp(presented, 0, 1);
   const top = index === 0 ? lerp(0, stackedTop, blend) : stackedTop;
   const hidden = (1 - appear) * Math.max(0, height - top);
-  const full = Math.max(1, height - stackedTop);
-  const slab = Math.min(full, Math.max(220, peek * 1.25));
-  const face = lerp(full, slab, clamp(depth, 0, 1));
-  const scale = 1 - Math.min(depth, TILT_DEPTH) * 0.015;
   const radius = index === 0 ? lerp(0, RADIUS, blend) : RADIUS;
-  // Drafts use the resting lean for their depth the whole time they move,
-  // including while the front one is still off the bottom of the screen.
   const resting = tilt(depth);
   const rotateX = index === 0 ? lerp(0, resting, blend) : resting;
-  const dim = clamp(depth, 0, 1);
-  const fill = index === 0 ? lerp(1, INBOX_FILL, blend) : 1;
   const inset = index === 0 ? lerp(0, SIDE_INSET, blend) : SIDE_INSET;
 
   return {
     top,
     hidden,
-    face,
-    scale,
+    face: height,
+    scale: 1,
     radius,
     appear,
-    dim,
+    dim: clamp(depth, 0, 1),
     rotateX,
     perspective: PERSPECTIVE,
-    fill,
-    inset,
     peek,
+    inset,
   };
 }

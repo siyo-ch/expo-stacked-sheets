@@ -16,7 +16,6 @@ import { Easing, runOnJS, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWindowDimensions } from 'react-native';
 
-import { ComposeFab } from '../components/ComposeFab';
 import { type Draft, updateDraft, useDrafts } from '../navigation/draftStore';
 import { MOTION_DURATION, dismissTravel } from '../navigation/sheetLayout';
 import { requestCloseTop, useMotion } from '../navigation/sheetMotion';
@@ -150,7 +149,6 @@ export function ComposeBody({ draft }: { draft: Draft }) {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      {front ? <ComposeFab /> : null}
     </View>
   );
 }
