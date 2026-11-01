@@ -4,10 +4,12 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
+  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { useDraft } from '../navigation/draftStore';
 import {
@@ -42,7 +44,7 @@ export const StackedCard = memo(function StackedCard({
     failOffsetY: [-12, 12],
     onActivate: () => {
       'worklet';
-      cancelAnimation(horizontal);
+      if (!closing.value) cancelAnimation(horizontal);
     },
     onUpdate: (event) => {
       'worklet';
@@ -60,9 +62,11 @@ export const StackedCard = memo(function StackedCard({
         )
       ) {
         closing.value = true;
-        horizontal.value = withSpring(
+        // Finish the semantic dismissal promptly. Waiting for a spring's
+        // invisible settling tail leaves a vacant slot before reflow starts.
+        horizontal.value = withTiming(
           horizontal.value < 0 ? -width * 1.2 : width * 1.2,
-          { ...SPRING, velocity: event.velocityX ?? 0 },
+          { duration: 180, easing: Easing.out(Easing.cubic) },
           (finished) => {
             if (finished) runOnJS(closeDraft)(id);
           },
@@ -134,9 +138,13 @@ export const StackedCard = memo(function StackedCard({
             if (closing.value) return;
             closing.value = true;
             horizontal.set(
-              withSpring(-width * 1.2, SPRING, (finished) => {
-                if (finished) runOnJS(closeDraft)(id);
-              }),
+              withTiming(
+                -width * 1.2,
+                { duration: 180, easing: Easing.out(Easing.cubic) },
+                (finished) => {
+                  if (finished) runOnJS(closeDraft)(id);
+                },
+              ),
             );
           }}
           style={styles.closeHit}
