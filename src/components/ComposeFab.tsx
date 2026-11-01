@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { openCompose } from '../navigation/sheetMotion';
 import { colors } from '../theme';
 
-export function ComposeFab() {
+export function ComposeFab({ bottomOffset = 0 }: { bottomOffset?: number }) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -16,11 +16,11 @@ export function ComposeFab() {
       onPress={openCompose}
       style={({ pressed }) => [
         styles.fab,
-        { bottom: Math.max(insets.bottom, 12) + 18 },
+        { bottom: Math.max(insets.bottom, 12) + 18 + bottomOffset },
         pressed && styles.pressed,
       ]}
     >
-      <Ionicons name="create-outline" size={26} color={colors.white} />
+      <Ionicons name="create-outline" size={26} color={colors.text} />
     </Pressable>
   );
 }
@@ -28,11 +28,12 @@ export function ComposeFab() {
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
+    zIndex: 1000,
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.blue,
+    backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.shadow,

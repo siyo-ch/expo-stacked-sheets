@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Local simulator evidence and reference recordings
+.sim-shots/

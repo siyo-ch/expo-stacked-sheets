@@ -9,22 +9,22 @@ export type Draft = {
   body: string;
   extrasOpen: boolean;
 };
-
 let sequence = 0;
-
-const store = {
-  drafts: [] as Draft[],
-  listeners: new Set<() => void>(),
-};
-
+let drafts: Draft[] = [];
+let ids: string[] = [];
+const listeners = new Set<() => void>();
 function emit() {
-  store.listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => listener());
 }
-
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
 export function createDraft(): Draft {
-  sequence += 1;
   return {
-    id: `draft-${sequence}-${Date.now().toString(36)}`,
+    id: `draft-${++sequence}-${Date.now().toString(36)}`,
     to: '',
     cc: '',
     bcc: '',
@@ -33,40 +33,39 @@ export function createDraft(): Draft {
     extrasOpen: false,
   };
 }
-
+export function getDraft(id: string) {
+  return drafts.find((draft) => draft.id === id);
+}
+export function getDraftIds() {
+  return ids;
+}
 export function getDraftCount() {
-  return store.drafts.length;
+  return ids.length;
 }
-
 export function addDraft(draft: Draft) {
-  store.drafts = [...store.drafts, draft];
+  drafts = [...drafts, draft];
+  ids = drafts.map((item) => item.id);
   emit();
 }
-
 export function updateDraft(id: string, patch: Partial<Omit<Draft, 'id'>>) {
-  store.drafts = store.drafts.map((draft) =>
-    draft.id === id ? { ...draft, ...patch } : draft,
+  drafts = drafts.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft));
+  // The ID snapshot and other draft objects keep their identity while typing.
+  emit();
+}
+export function retainDrafts(remaining: readonly string[]) {
+  const next = drafts.filter((draft) => remaining.includes(draft.id));
+  if (next.length === drafts.length) return;
+  drafts = next;
+  ids = drafts.map((draft) => draft.id);
+  emit();
+}
+export function useDraftIds() {
+  return useSyncExternalStore(subscribe, getDraftIds, getDraftIds);
+}
+export function useDraft(id: string) {
+  return useSyncExternalStore(
+    subscribe,
+    () => getDraft(id),
+    () => getDraft(id),
   );
-  emit();
-}
-
-export function trimDrafts(count: number) {
-  if (store.drafts.length <= count) return;
-  store.drafts = store.drafts.slice(0, Math.max(0, count));
-  emit();
-}
-
-function subscribe(listener: () => void) {
-  store.listeners.add(listener);
-  return () => {
-    store.listeners.delete(listener);
-  };
-}
-
-function getSnapshot() {
-  return store.drafts;
-}
-
-export function useDrafts() {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

@@ -1,81 +1,78 @@
-/**
- * Shared stack interpolator for the mail draft cards.
- *
- * native-stack has no cardStyleInterpolator, so both platforms drive the same
- * Reanimated progress (`presented` draft count, minus the drag fraction) through
- * this function: scale, vertical rest position, and the distance a card still
- * has to travel while it is entering or leaving.
- */
-
-const PEEK_MAX = 280;
-const RADIUS = 36;
-const SCALE_STEP = 0.042;
-
-export type SheetFrame = {
-  /** Resting top once this card has finished entering. */
-  top: number;
-  /** Extra downward offset while the card is entering or being dismissed. */
-  hidden: number;
-  scale: number;
-  radius: number;
-  appear: number;
-};
-
-function clamp(value: number, min: number, max: number) {
+/** Geometry from the supplied iOS Mail video. Editing is flat; only the
+ * scrollable draft overview uses perspective. All distances are in points. */
+export const SPRING = { stiffness: 340, damping: 34, mass: 1 };
+export const CARD_RADIUS = 36;
+export const CARD_INSET = 12;
+export const PERSPECTIVE = 1800;
+export function clamp(value: number, low: number, high: number) {
   'worklet';
-  return Math.min(max, Math.max(min, value));
+  return Math.max(low, Math.min(high, value));
+}
+export function deckMetrics(height: number, count: number) {
+  'worklet';
+  const first = height * 0.155;
+  const step = height * (0.298 - 0.053 * clamp(count - 2, 0, 1));
+  const maxScroll = Math.max(0, first + count * step - height * 0.64);
+  return { first, step, maxScroll };
+}
+export function deckFrame(
+  index: number,
+  count: number,
+  height: number,
+  scroll: number,
+) {
+  'worklet';
+  const { first, step } = deckMetrics(height, count);
+  const top = first + index * step - scroll;
+  // Cards change their lean gently as they pass through the viewport.
+  const angle = -(38 + 10 * clamp(top / height, 0, 1));
+  const radians = (angle * Math.PI) / 180;
+  return { top, cosine: Math.cos(radians), taper: -Math.sin(radians) / PERSPECTIVE };
+}
+export function shouldMinimize(distance: number, velocity: number, canceled: boolean) {
+  'worklet';
+  return !canceled && (distance > 110 || (distance > 32 && velocity > 850));
+}
+export function shouldDismissCard(
+  distance: number,
+  velocity: number,
+  width: number,
+  canceled: boolean,
+) {
+  'worklet';
+  return (
+    !canceled &&
+    (Math.abs(distance) > width * 0.28 ||
+      (Math.abs(distance) > 32 && Math.abs(velocity) > 850))
+  );
 }
 
-function lerp(from: number, to: number, progress: number) {
+/** One homography keeps the paper in the XY plane. RN requires matrix to be
+ * the sole transform; translation is composed into its numerator here. */
+export function paperTransform(
+  top: number,
+  x: number,
+  cosine: number,
+  taper: number,
+  scaleX = 1,
+) {
   'worklet';
-  return from + (to - from) * progress;
-}
-
-const SHIFT_UP = 8;
-
-export function stackMetrics(height: number, topInset: number, presented: number) {
-  'worklet';
-  const firstTop = topInset + 8;
-  const minFront = Math.max(260, Math.min(height * 0.38, 280));
-  const maxFrontTop = Math.max(firstTop + 1, height - minFront);
-  const natural = firstTop + Math.max(presented, 0) * PEEK_MAX;
-  const frontRest = Math.min(natural, maxFrontTop);
-  return { firstTop, frontRest };
-}
-
-/** Finger travel that maps onto the front sheet sliding off from its current rest. */
-export function dismissTravel(height: number, topInset: number, presented = 1) {
-  'worklet';
-  const { frontRest } = stackMetrics(height, topInset, Math.max(presented, 0));
-  return Math.max(1, height - frontRest);
-}
-
-export function sheetFrame(input: {
-  presented: number;
-  index: number;
-  height: number;
-  topInset: number;
-}): SheetFrame {
-  'worklet';
-  const presented = Math.max(0, input.presented);
-  const { index, height, topInset } = input;
-  const appear = index === 0 ? 1 : clamp(presented - (index - 1), 0, 1);
-  const depth = Math.max(0, presented - index);
-
-  if (presented <= 0.001 && index === 0) {
-    return { top: 0, hidden: 0, scale: 1, radius: 0, appear: 1 };
-  }
-
-  const { firstTop, frontRest } = stackMetrics(height, topInset, presented);
-  const room = Math.max(0, frontRest - firstTop);
-  const peek = presented > 0.001 ? Math.min(PEEK_MAX, room / presented) : 0;
-  const stackedTop = frontRest - depth * peek;
-  const blend = clamp(presented, 0, 1);
-  const lifted = Math.max(index === 0 ? topInset : 0, stackedTop - depth * SHIFT_UP);
-  const top = index === 0 ? lerp(0, lifted, blend) : lifted;
-  const hidden = (1 - appear) * Math.max(0, height - top);
-  const scale = 1 - Math.min(depth, 6) * SCALE_STEP;
-  const radius = index === 0 ? lerp(0, RADIUS, blend) : RADIUS;
-
-  return { top, hidden, scale, radius, appear };
+  return [
+    scaleX,
+    0,
+    0,
+    0,
+    x * taper,
+    cosine + top * taper,
+    0,
+    taper,
+    0,
+    0,
+    1,
+    0,
+    x,
+    top,
+    0,
+    1,
+  ];
 }

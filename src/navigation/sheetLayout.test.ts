@@ -1,71 +1,65 @@
 import assert from 'node:assert/strict';
+import {
+  deckFrame,
+  deckMetrics,
+  shouldMinimize,
+  shouldDismissCard,
+  paperTransform,
+} from './sheetLayout.ts';
 
-import { dismissTravel, sheetFrame } from './sheetLayout.ts';
-
-const height = 852;
-const topInset = 59;
-
-const inboxAlone = sheetFrame({ presented: 0, index: 0, height, topInset });
-assert.equal(inboxAlone.top, 0);
-assert.equal(inboxAlone.hidden, 0);
-assert.equal(inboxAlone.scale, 1);
-assert.equal(inboxAlone.radius, 0);
-
-const front = sheetFrame({ presented: 2, index: 2, height, topInset });
-const middle = sheetFrame({ presented: 2, index: 1, height, topInset });
-const back = sheetFrame({ presented: 2, index: 0, height, topInset });
-
-assert.ok(back.top < middle.top, 'inbox sits above the middle draft');
-assert.ok(middle.top < front.top, 'middle draft sits above the front draft');
-assert.equal(front.hidden, 0);
-assert.equal(front.scale, 1);
-assert.ok(middle.scale < front.scale);
-assert.ok(back.scale < middle.scale);
-
-const peek = middle.top - back.top;
-assert.ok(peek > 140 && peek < 320, `covered card peek was ${peek}`);
-assert.ok(front.top - middle.top > 140);
-
-const inboxOne = sheetFrame({ presented: 1, index: 0, height, topInset });
-assert.ok(inboxOne.top < topInset + 24, 'one draft keeps the inbox under the status bar');
-assert.ok(back.top < topInset + 24, 'two drafts keep the inbox under the status bar');
-
-const compressed = sheetFrame({ presented: 3, index: 1, height, topInset });
-assert.ok(
-  compressed.top < middle.top - 40,
-  'a covered draft shifts up once the stack runs out of room',
-);
-
-const entering = sheetFrame({ presented: 0.2, index: 1, height, topInset });
-assert.ok(
-  entering.hidden > dismissTravel(height, topInset) * 0.7,
-  'a new draft is still mostly below its resting position',
-);
-
-const dragged = sheetFrame({ presented: 1.65, index: 2, height, topInset });
-assert.ok(
-  dragged.top + dragged.hidden > front.top + front.hidden,
-  'pulling the front draft down follows the gesture progress',
-);
-
-assert.ok(dismissTravel(height, topInset) > 200);
-
-for (const screen of [400, 700, 852, 932]) {
-  for (const presented of [0, 0.2, 1, 1.5, 2, 3, 5]) {
-    const last = Math.ceil(presented);
-    for (let index = 0; index <= last; index += 1) {
-      const frame = sheetFrame({
-        presented,
-        index,
-        height: screen,
-        topInset: 47,
-      });
-      assert.ok(Number.isFinite(frame.top + frame.hidden + frame.scale));
-      assert.ok(frame.scale > 0.5 && frame.scale <= 1);
-      assert.ok(frame.top >= -0.01);
-      assert.ok(frame.top + frame.hidden <= screen + 0.01);
-    }
+// Overview keeps a stable card rhythm and scrolls, rather than crushing every
+// draft into the viewport. Even draft 20 must be reachable at maximum scroll.
+for (const height of [667, 700, 852, 956, 1024]) {
+  for (const count of [1, 2, 3, 6, 20]) {
+    const { maxScroll, step } = deckMetrics(height, count);
+    assert.ok(maxScroll >= 0);
+    const last = deckFrame(count, count, height, maxScroll);
+    assert.ok(last.top < height * 0.8, 'last draft can be brought into reach');
+    assert.ok(last.top > 0, 'active header does not disappear above the screen');
+    const previous = deckFrame(count - 1, count, height, maxScroll);
+    assert.ok(Math.abs(last.top - previous.top - step) < 0.01);
+    assert.ok(last.cosine > 0.6 && last.cosine < 0.9);
+    assert.ok(last.taper > 0, 'paper narrows toward its lower edge');
+    const moved = deckFrame(count, count, height, maxScroll - 40);
+    assert.equal(Math.round(moved.top - last.top), 40, 'scroll follows the finger');
   }
 }
-
+assert.equal(shouldMinimize(20, 100, false), false, 'short drag springs back');
+assert.equal(shouldMinimize(120, 0, false), true);
+assert.equal(shouldMinimize(40, 900, false), true, 'quick flick minimizes');
+assert.equal(shouldMinimize(400, 2000, true), false, 'cancelled drag retains draft');
+assert.equal(shouldDismissCard(-150, 0, 393, false), true);
+assert.equal(shouldDismissCard(40, -900, 393, false), true);
+assert.equal(shouldDismissCard(50, 0, 393, false), false);
+assert.equal(shouldDismissCard(-400, -2000, 393, true), false);
 console.log('sheetLayout tests passed');
+
+// A single matrix composes screen-space translation with perspective. The
+// projected top edge must stay at the requested top even while swiping.
+const matrix = paperTransform(320, -80, 0.72, 0.0004);
+function project(x: number, y: number) {
+  const w = matrix[3] * x + matrix[7] * y + matrix[15];
+  return [
+    (matrix[0] * x + matrix[4] * y + matrix[12]) / w,
+    (matrix[1] * x + matrix[5] * y + matrix[13]) / w,
+  ];
+}
+assert.deepEqual(project(0, 0), [-80, 320]);
+const centerBelow = project(0, 200);
+assert.equal(
+  Math.round(centerBelow[0]),
+  -80,
+  'horizontal translation stays in screen space',
+);
+assert.ok(Math.abs(centerBelow[1] - (320 + 144 / 1.08)) < 0.001);
+
+assert.equal(
+  shouldDismissCard(20, 2000, 393, false),
+  false,
+  'tiny fast drags do not accidentally delete drafts',
+);
+assert.equal(
+  shouldMinimize(20, 2000, false),
+  false,
+  'tiny fast drags do not accidentally minimize',
+);
