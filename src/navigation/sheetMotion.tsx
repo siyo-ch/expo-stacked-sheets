@@ -21,12 +21,13 @@ import {
   retainDrafts,
 } from './draftStore';
 import { SPRING, deckFrame } from './sheetLayout';
+import { initialDraft } from './initialMailSession';
 import type { RootStackParamList } from './types';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 export type MailMode = 'inbox' | 'compose' | 'overview';
 type ViewState = { mode: MailMode; activeId: string | null };
-let state: ViewState = { mode: 'inbox', activeId: null };
+let state: ViewState = { mode: 'inbox', activeId: initialDraft.id };
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => {
   listeners.add(listener);
