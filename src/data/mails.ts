@@ -21,7 +21,7 @@ export const MAILS: Mail[] = [
     time: '下午 6:38',
     unread: true,
     icon: 'star',
-    tint: '#D24BDB',
+    tint: '#CB75C6',
   },
   {
     id: 'google-2',
@@ -32,7 +32,7 @@ export const MAILS: Mail[] = [
     time: '下午 6:36',
     unread: true,
     icon: 'star',
-    tint: '#D24BDB',
+    tint: '#CB75C6',
   },
   {
     id: 'apple-1',

@@ -1,136 +1,211 @@
-import { type ReactNode } from 'react';
-import { StyleSheet } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { memo, useEffect } from 'react';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
+  cancelAnimation,
+  runOnJS,
   useAnimatedStyle,
-  type SharedValue,
+  useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useWindowDimensions } from 'react-native';
+import { useDraft } from '../navigation/draftStore';
+import {
+  CARD_INSET,
+  CARD_RADIUS,
+  SPRING,
+  deckFrame,
+  paperTransform,
+  shouldDismissCard,
+} from '../navigation/sheetLayout';
+import { closeDraft, selectDraft, useMotion } from '../navigation/sheetMotion';
+import { FROM_EMAIL } from '../theme';
 
-import { useDrafts } from '../navigation/draftStore';
-import { sheetFrame } from '../navigation/sheetLayout';
-import { useMotion } from '../navigation/sheetMotion';
-import { colors } from '../theme';
-
-function progressOf(presented: SharedValue<number>, drag: SharedValue<number>) {
-  'worklet';
-  return Math.max(0, presented.value - drag.value);
-}
-
-function useFrameStyle(
-  index: number,
-  presented: SharedValue<number>,
-  drag: SharedValue<number>,
-  height: number,
-  topInset: number,
-) {
-  return useAnimatedStyle(() => {
-    const frame = sheetFrame({
-      presented: progressOf(presented, drag),
-      index,
-      height,
-      topInset,
-    });
-    // Screen-space top keeps the rise vertical. rotateX is only the resting lean.
-    return {
-      top: frame.top + frame.hidden,
-      height: frame.face,
-      left: frame.inset,
-      right: frame.inset,
-      borderTopLeftRadius: frame.radius,
-      borderTopRightRadius: frame.radius,
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-      backgroundColor: `rgba(255,255,255,${frame.fill})`,
-      transform: [
-        { perspective: frame.perspective },
-        { rotateX: `${frame.rotateX}deg` },
-      ],
-      shadowOpacity: frame.radius > 1 ? 0.08 : 0,
-    };
-  });
-}
-
-export function StackedCard({
+/** Overview cards contain lightweight previews, never mounted text editors. */
+export const StackedCard = memo(function StackedCard({
+  id,
   index,
-  children,
 }: {
+  id: string;
   index: number;
-  children: ReactNode;
 }) {
-  const drafts = useDrafts();
-  const { presented, drag } = useMotion();
-  const { height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const front = index === drafts.length;
-  const frameStyle = useFrameStyle(index, presented, drag, height, insets.top);
-  const clipStyle = useAnimatedStyle(() => {
-    const frame = sheetFrame({
-      presented: progressOf(presented, drag),
-      index,
-      height,
-      topInset: insets.top,
-    });
+  const { width, height } = useWindowDimensions();
+  const { overview, scroll, count: animatedCount } = useMotion();
+  const slot = useSharedValue(index);
+  useEffect(() => {
+    slot.set(withSpring(index, SPRING));
+  }, [slot, index]);
+  const horizontal = useSharedValue(0);
+  const closing = useSharedValue(false);
+  const pan = usePanGesture({
+    activeOffsetX: [-12, 12],
+    failOffsetY: [-12, 12],
+    onActivate: () => {
+      'worklet';
+      cancelAnimation(horizontal);
+    },
+    onUpdate: (event) => {
+      'worklet';
+      if (!closing.value) horizontal.value = event.translationX;
+    },
+    onDeactivate: (event) => {
+      'worklet';
+      if (closing.value) return;
+      if (
+        shouldDismissCard(
+          horizontal.value,
+          event.velocityX ?? 0,
+          width,
+          !!event.canceled,
+        )
+      ) {
+        closing.value = true;
+        horizontal.value = withSpring(
+          horizontal.value < 0 ? -width * 1.2 : width * 1.2,
+          { ...SPRING, velocity: event.velocityX ?? 0 },
+          (finished) => {
+            if (finished) runOnJS(closeDraft)(id);
+          },
+        );
+      } else
+        horizontal.value = withSpring(0, { ...SPRING, velocity: event.velocityX ?? 0 });
+    },
+  });
+  const positionStyle = useAnimatedStyle(() => {
+    const frame = deckFrame(slot.value, animatedCount.value, height, scroll.value);
+    const p = overview.value;
     return {
-      borderTopLeftRadius: frame.radius,
-      borderTopRightRadius: frame.radius,
+      opacity: p,
+      transform: [
+        { translateX: horizontal.value },
+        { translateY: frame.top + (1 - p) * height * 0.7 },
+      ],
     };
   });
-  const fadeStyle = useAnimatedStyle(() => {
-    const frame = sheetFrame({
-      presented: progressOf(presented, drag),
-      index,
-      height,
-      topInset: insets.top,
-    });
-    const band = Math.max(frame.peek, 1);
+  const paperStyle = useAnimatedStyle(() => {
+    const frame = deckFrame(slot.value, animatedCount.value, height, scroll.value);
+    const p = overview.value;
     return {
-      top: band * 0.58,
-      height: band * 0.48,
-      opacity: frame.dim,
+      transform: [
+        { matrix: paperTransform(0, 0, 1 + (frame.cosine - 1) * p, frame.taper * p) },
+      ],
     };
   });
 
   return (
-    <Animated.View
-      testID={`sheet-${index}`}
-      collapsable={false}
-      pointerEvents={front ? 'auto' : 'none'}
-      accessibilityElementsHidden={!front}
-      importantForAccessibility={front ? 'auto' : 'no-hide-descendants'}
-      style={[
-        styles.outer,
-        { zIndex: index, elevation: index === 0 ? 2 : 10 },
-        frameStyle,
-      ]}
-    >
-      <Animated.View style={[styles.inner, clipStyle]}>
-        {children}
-        <Animated.View pointerEvents="none" style={[styles.fade, fadeStyle]} />
+    <GestureDetector gesture={pan}>
+      <Animated.View
+        testID={`draft-card-${id}`}
+        collapsable={false}
+        style={[
+          styles.position,
+          { height: height + 160, zIndex: index },
+          positionStyle,
+        ]}
+      >
+        {/* UIKit's perspective hit testing does not match the projected X.
+            Keep visual projection non-interactive and hit-test in screen space. */}
+        <Animated.View
+          pointerEvents="none"
+          aria-hidden
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.paper, paperStyle]}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>新邮件</Text>
+          </View>
+          <DraftPreview id={id} />
+          <View style={styles.shade} />
+          <View style={styles.close}>
+            <Ionicons name="close" size={29} color="#111" />
+          </View>
+        </Animated.View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`打开草稿 ${index}`}
+          onPress={() => selectDraft(id)}
+          style={StyleSheet.absoluteFill}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`关闭草稿 ${index}`}
+          onPress={() => {
+            if (closing.value) return;
+            closing.value = true;
+            horizontal.set(
+              withSpring(-width * 1.2, SPRING, (finished) => {
+                if (finished) runOnJS(closeDraft)(id);
+              }),
+            );
+          }}
+          style={styles.closeHit}
+          hitSlop={4}
+        />
       </Animated.View>
-    </Animated.View>
+    </GestureDetector>
+  );
+});
+function DraftPreview({ id }: { id: string }) {
+  const draft = useDraft(id);
+  if (!draft) return null;
+  return (
+    <View style={styles.fields}>
+      <Text numberOfLines={1} style={styles.field}>
+        收件人：{draft.to}
+      </Text>
+      <Text numberOfLines={1} style={styles.field}>
+        抄送 / 密送，发件人：{FROM_EMAIL}
+      </Text>
+      <Text numberOfLines={1} style={styles.field}>
+        主题：{draft.subject}
+      </Text>
+      <Text numberOfLines={5} style={styles.body}>
+        {draft.body}
+      </Text>
+      <Text style={styles.signature}>发自我的 iPhone</Text>
+    </View>
   );
 }
-
 const styles = StyleSheet.create({
-  outer: {
-    position: 'absolute',
-    transformOrigin: 'top center',
-    overflow: 'visible',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 16,
-  },
-  inner: {
-    flex: 1,
+  position: { position: 'absolute', top: 0, left: CARD_INSET, right: CARD_INSET },
+  closeHit: { position: 'absolute', top: 0, left: 12, width: 48, height: 48 },
+  paper: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: CARD_RADIUS,
+    backgroundColor: '#FFF',
+    transformOrigin: '50% 0%',
     overflow: 'hidden',
-    backgroundColor: 'transparent',
   },
-  fade: {
+  header: { height: 74, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 17, fontWeight: '700', color: '#111' },
+  close: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    top: 7,
+    left: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FAFAFA',
+    borderColor: '#D8D8D8',
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fields: { paddingHorizontal: 20 },
+  field: {
+    minHeight: 48,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#8E8E93',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#DDD',
+  },
+  body: { fontSize: 17, color: '#111', marginTop: 18 },
+  signature: { fontSize: 17, color: '#111', marginTop: 12 },
+  shade: {
+    ...StyleSheet.absoluteFill,
     backgroundImage:
-      'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(214,214,218,0.2) 50%, rgba(188,188,194,0.5) 100%)',
+      'linear-gradient(to bottom, rgba(0,0,0,0) 4%, rgba(0,0,0,0.12) 16%, rgba(0,0,0,0.42) 48%, rgba(0,0,0,0.42) 100%)',
   },
 });

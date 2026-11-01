@@ -47,10 +47,14 @@ export function RootNavigator() {
             }}
           >
             <Stack.Screen name="Inbox" component={HistoryScreen} />
-            <Stack.Screen name="Compose" component={HistoryScreen} />
+            <Stack.Screen
+              name="Compose"
+              component={HistoryScreen}
+              getId={({ params }) => params.draftId}
+            />
           </Stack.Navigator>
         </NavigationContainer>
-        <View style={styles.stage} pointerEvents="box-none">
+        <View collapsable={false} style={styles.stage} pointerEvents="box-none">
           <MailStack />
         </View>
       </View>
@@ -72,5 +76,6 @@ const styles = StyleSheet.create({
   },
   stage: {
     ...StyleSheet.absoluteFill,
+    zIndex: 1,
   },
 });

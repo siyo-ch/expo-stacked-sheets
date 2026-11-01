@@ -1,137 +1,65 @@
 import assert from 'node:assert/strict';
-
 import {
-  MOTION_DURATION,
-  MOTION_EASING,
-  PERSPECTIVE,
-  RADIUS,
-  REF_FIRST,
-  REF_SCREEN,
-  REF_STEP,
-  ROTATE_DEEP,
-  ROTATE_FRONT,
-  SIDE_INSET,
-  INBOX_FILL,
-  OVERHANG,
-  dismissTravel,
-  sheetFrame,
+  deckFrame,
+  deckMetrics,
+  shouldMinimize,
+  shouldDismissCard,
+  paperTransform,
 } from './sheetLayout.ts';
 
-assert.ok(PERSPECTIVE >= 700 && PERSPECTIVE <= 1200);
-assert.ok(ROTATE_FRONT >= 0 && ROTATE_FRONT <= 6);
-assert.ok(ROTATE_DEEP > ROTATE_FRONT && ROTATE_DEEP <= 10);
-assert.equal(SIDE_INSET, 12);
-assert.ok(RADIUS >= 37 && RADIUS <= 40);
-assert.ok(MOTION_DURATION >= 280 && MOTION_DURATION <= 320);
-assert.equal(MOTION_EASING, 'ease-out');
-assert.equal(REF_SCREEN, 852);
-assert.equal(REF_FIRST, 133);
-assert.equal(REF_STEP, 254);
-assert.ok(INBOX_FILL > 0.82 && INBOX_FILL < 0.96);
-
-/** Visible width ratio from just under the radius to near the next card. */
-function widthRatio(angleDeg: number, screen = 393) {
-  const s = Math.sin((angleDeg * Math.PI) / 180);
-  const layout = screen - SIDE_INSET * 2;
-  const width = (y: number) =>
-    Math.min(screen, (layout * PERSPECTIVE) / (PERSPECTIVE - y * s));
-  return width(50) / width(220);
-}
-
-for (const angle of [ROTATE_FRONT, (ROTATE_FRONT + ROTATE_DEEP) / 2, ROTATE_DEEP]) {
-  const ratio = widthRatio(angle);
-  assert.ok(
-    ratio >= 0.96 && ratio <= 0.995,
-    `top/lower width at ${angle}deg was ${ratio.toFixed(3)}`,
-  );
-}
-
-const phone = 852;
-const back = sheetFrame({ presented: 2, index: 0, height: phone, topInset: 59 });
-const middle = sheetFrame({ presented: 2, index: 1, height: phone, topInset: 59 });
-const front = sheetFrame({ presented: 2, index: 2, height: phone, topInset: 59 });
-
-assert.ok(Math.abs(back.top - 133) < 0.5, `inbox top ${back.top}`);
-assert.ok(Math.abs(middle.top - 387) < 0.5, `middle top ${middle.top}`);
-assert.ok(Math.abs(front.top - 641) < 0.5, `front top ${front.top}`);
-assert.ok(Math.abs(middle.top - back.top - 254) < 0.5, `peek ${middle.top - back.top}`);
-assert.equal(front.rotateX, ROTATE_FRONT);
-assert.ok(middle.rotateX > front.rotateX);
-assert.ok(back.rotateX > middle.rotateX);
-assert.ok(back.rotateX <= 12);
-assert.equal(front.dim, 0);
-assert.equal(middle.dim, 1);
-assert.equal(back.face, phone + OVERHANG);
-assert.ok(back.fill < 1, 'covered inbox is translucent');
-assert.equal(front.fill, 1);
-assert.ok(back.top + back.face > phone + 200, 'inbox runs past the bottom of the screen');
-assert.ok(middle.top + middle.face > phone + 200, 'covered draft runs past the bottom');
-assert.ok(front.top + front.face > phone + 200, 'front card runs past the bottom');
-assert.equal(front.radius, RADIUS);
-assert.equal(front.inset, SIDE_INSET);
-assert.equal(back.inset, SIDE_INSET);
-
-const short = sheetFrame({ presented: 2, index: 2, height: 700, topInset: 47 });
-const shortBack = sheetFrame({ presented: 2, index: 0, height: 700, topInset: 47 });
-const shortStep = short.top - sheetFrame({ presented: 2, index: 1, height: 700, topInset: 47 }).top;
-assert.ok(
-  Math.abs(shortStep / 700 - REF_STEP / REF_SCREEN) < 0.001,
-  'a short screen keeps the 30% layer step',
-);
-assert.ok(shortBack.top / 700 - REF_FIRST / REF_SCREEN < 0.001);
-
-const image = 1024;
-const imageBack = sheetFrame({ presented: 2, index: 0, height: image, topInset: 59 });
-const imageMid = sheetFrame({ presented: 2, index: 1, height: image, topInset: 59 });
-const imageFront = sheetFrame({ presented: 2, index: 2, height: image, topInset: 59 });
-assert.ok(Math.abs(imageBack.top - 160) < 1.5, `image inbox ${imageBack.top}`);
-assert.ok(Math.abs(imageMid.top - 465) < 1.5, `image middle ${imageMid.top}`);
-assert.ok(Math.abs(imageFront.top - 770) < 1.5, `image front ${imageFront.top}`);
-
-const inboxAlone = sheetFrame({ presented: 0, index: 0, height: phone, topInset: 59 });
-assert.equal(inboxAlone.top, 0);
-assert.equal(inboxAlone.rotateX, 0);
-assert.equal(inboxAlone.radius, 0);
-assert.equal(inboxAlone.hidden, 0);
-
-const risingEarly = sheetFrame({ presented: 1.2, index: 2, height: phone, topInset: 59 });
-const risingLate = sheetFrame({ presented: 1.85, index: 2, height: phone, topInset: 59 });
-assert.equal(risingEarly.rotateX, risingLate.rotateX);
-assert.equal(risingEarly.rotateX, ROTATE_FRONT);
-assert.ok(risingEarly.top + risingEarly.hidden > risingLate.top + risingLate.hidden);
-
-const coveredAtOne = sheetFrame({ presented: 1, index: 1, height: phone, topInset: 59 });
-const coveredAtTwo = sheetFrame({ presented: 2, index: 1, height: phone, topInset: 59 });
-const leanStep = coveredAtTwo.rotateX - coveredAtOne.rotateX;
-assert.ok(leanStep > 0 && leanStep < 4, `lean step ${leanStep} should settle, not flip`);
-
-const entering = sheetFrame({ presented: 0.2, index: 1, height: phone, topInset: 59 });
-assert.equal(entering.rotateX, ROTATE_FRONT);
-assert.ok(entering.hidden > dismissTravel(phone, 59) * 0.7);
-
-const dragged = sheetFrame({ presented: 1.65, index: 2, height: phone, topInset: 59 });
-assert.ok(dragged.top + dragged.hidden > front.top);
-assert.equal(dragged.rotateX, front.rotateX);
-assert.ok(dismissTravel(phone, 59) > 200);
-
-for (const screen of [700, 852, 932, 1024]) {
-  for (const presented of [0, 0.2, 1, 1.5, 2, 3]) {
-    const last = Math.ceil(presented);
-    for (let index = 0; index <= last; index += 1) {
-      const frame = sheetFrame({
-        presented,
-        index,
-        height: screen,
-        topInset: 47,
-      });
-      assert.ok(Number.isFinite(frame.top + frame.hidden + frame.face + frame.rotateX));
-      assert.equal(frame.scale, 1);
-      assert.ok(frame.rotateX >= 0 && frame.rotateX <= ROTATE_DEEP + 0.01);
-      assert.equal(frame.perspective, PERSPECTIVE);
-      assert.ok(frame.face === screen || frame.face === screen + OVERHANG);
-      assert.ok(frame.top >= -0.01);
-    }
+// Overview keeps a stable card rhythm and scrolls, rather than crushing every
+// draft into the viewport. Even draft 20 must be reachable at maximum scroll.
+for (const height of [667, 700, 852, 956, 1024]) {
+  for (const count of [1, 2, 3, 6, 20]) {
+    const { maxScroll, step } = deckMetrics(height, count);
+    assert.ok(maxScroll >= 0);
+    const last = deckFrame(count, count, height, maxScroll);
+    assert.ok(last.top < height * 0.8, 'last draft can be brought into reach');
+    assert.ok(last.top > 0, 'active header does not disappear above the screen');
+    const previous = deckFrame(count - 1, count, height, maxScroll);
+    assert.ok(Math.abs(last.top - previous.top - step) < 0.01);
+    assert.ok(last.cosine > 0.6 && last.cosine < 0.9);
+    assert.ok(last.taper > 0, 'paper narrows toward its lower edge');
+    const moved = deckFrame(count, count, height, maxScroll - 40);
+    assert.equal(Math.round(moved.top - last.top), 40, 'scroll follows the finger');
   }
 }
-
+assert.equal(shouldMinimize(20, 100, false), false, 'short drag springs back');
+assert.equal(shouldMinimize(120, 0, false), true);
+assert.equal(shouldMinimize(40, 900, false), true, 'quick flick minimizes');
+assert.equal(shouldMinimize(400, 2000, true), false, 'cancelled drag retains draft');
+assert.equal(shouldDismissCard(-150, 0, 393, false), true);
+assert.equal(shouldDismissCard(40, -900, 393, false), true);
+assert.equal(shouldDismissCard(50, 0, 393, false), false);
+assert.equal(shouldDismissCard(-400, -2000, 393, true), false);
 console.log('sheetLayout tests passed');
+
+// A single matrix composes screen-space translation with perspective. The
+// projected top edge must stay at the requested top even while swiping.
+const matrix = paperTransform(320, -80, 0.72, 0.0004);
+function project(x: number, y: number) {
+  const w = matrix[3] * x + matrix[7] * y + matrix[15];
+  return [
+    (matrix[0] * x + matrix[4] * y + matrix[12]) / w,
+    (matrix[1] * x + matrix[5] * y + matrix[13]) / w,
+  ];
+}
+assert.deepEqual(project(0, 0), [-80, 320]);
+const centerBelow = project(0, 200);
+assert.equal(
+  Math.round(centerBelow[0]),
+  -80,
+  'horizontal translation stays in screen space',
+);
+assert.ok(Math.abs(centerBelow[1] - (320 + 144 / 1.08)) < 0.001);
+
+assert.equal(
+  shouldDismissCard(20, 2000, 393, false),
+  false,
+  'tiny fast drags do not accidentally delete drafts',
+);
+assert.equal(
+  shouldMinimize(20, 2000, false),
+  false,
+  'tiny fast drags do not accidentally minimize',
+);
