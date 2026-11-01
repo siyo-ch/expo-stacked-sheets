@@ -4,32 +4,36 @@
  * iOS and Android both feed the same Reanimated progress (settled draft count,
  * minus drag) through `sheetFrame`.
  *
- * Resting pose, measured on a 1024pt screen: card tops sit near 160, 465, and
- * 770 (about 30% of the screen per layer) on every phone, with no short-screen
- * squeeze. Each face is a full screen tall, so it runs past the bottom edge and
- * the next card's top covers it. There is no gap to the backdrop.
+ * Resting pose on an 852pt phone: card tops sit at 133, 387, and 641
+ * (160, 465, and 770 px on the 1024px reference, scaled by 0.833). The same
+ * ratio is used on every screen. Each face is taller than the screen, so it
+ * runs past the bottom edge and the next card's top covers it.
  *
- * The lean is a few degrees around the top edge. Across one layer the top of
- * the card stays about 94–97% as wide as the face below it. A new draft holds
- * the front angle and rises; it does not spin.
+ * The lean is a few degrees around the top edge. The top edge sits about 12pt
+ * in from the screen; the face below it is only slightly wider. A new draft
+ * holds the front angle and rises; it does not spin.
  */
 
-/** Reference screen the top offsets were measured on. */
-export const REF_SCREEN = 1024;
-/** Inbox top with two drafts open, on `REF_SCREEN`. */
-export const REF_FIRST = 160;
-/** Distance between card tops, on `REF_SCREEN` (465 - 160, 770 - 465). */
-export const REF_STEP = 305;
-/** Projection distance. Large enough that a few degrees only taper slightly. */
-export const PERSPECTIVE = 800;
+/** Phone height the reference tops were scaled onto (393×852 pt). */
+export const REF_SCREEN = 852;
+/** Inbox top with two drafts open, in points on `REF_SCREEN`. */
+export const REF_FIRST = 133;
+/** Distance between card tops, in points on `REF_SCREEN`. */
+export const REF_STEP = 254;
+/** Projection distance. Large enough that these angles barely taper. */
+export const PERSPECTIVE = 1000;
 /** Front sheet lean. It rises at this angle and does not spin in. */
-export const ROTATE_FRONT = 8;
+export const ROTATE_FRONT = 4;
 /** Inbox lean with two drafts open. Depth 1 sits halfway between the two. */
-export const ROTATE_DEEP = 10;
-/** Top corner radius. The front card must show the whole curve. */
-export const RADIUS = 46;
-/** A few points of side inset. Perspective opens the face back toward the screen edge. */
-export const SIDE_INSET = 10;
+export const ROTATE_DEEP = 8;
+/** Top corner radius. */
+export const RADIUS = 38;
+/** Side inset at the top edge, about 15px on the reference image. */
+export const SIDE_INSET = 12;
+/** How far a stacked face continues past the bottom of the screen. */
+export const OVERHANG = 320;
+/** White alpha of the inbox once a draft covers it. */
+export const INBOX_FILL = 0.9;
 /** Push and dismiss duration, in milliseconds. */
 export const MOTION_DURATION = 300;
 /** Push and dismiss easing. `sheetMotion` builds the Reanimated curve from this. */
@@ -55,6 +59,8 @@ export type SheetFrame = {
   /** On-screen step down to the next card. Places the grey dissolve. */
   peek: number;
   inset: number;
+  /** White fill alpha. The inbox becomes translucent; drafts stay solid. */
+  fill: number;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -114,6 +120,7 @@ export function sheetFrame(input: {
       perspective: PERSPECTIVE,
       peek: 0,
       inset: 0,
+      fill: 1,
     };
   }
 
@@ -126,11 +133,12 @@ export function sheetFrame(input: {
   const resting = tilt(depth);
   const rotateX = index === 0 ? lerp(0, resting, blend) : resting;
   const inset = index === 0 ? lerp(0, SIDE_INSET, blend) : SIDE_INSET;
+  const fill = index === 0 ? lerp(1, INBOX_FILL, blend) : 1;
 
   return {
     top,
     hidden,
-    face: height,
+    face: height + OVERHANG,
     scale: 1,
     radius,
     appear,
@@ -139,5 +147,6 @@ export function sheetFrame(input: {
     perspective: PERSPECTIVE,
     peek,
     inset,
+    fill,
   };
 }

@@ -41,7 +41,7 @@ function useFrameStyle(
       borderTopRightRadius: frame.radius,
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: `rgba(255,255,255,${frame.fill})`,
       transform: [
         { perspective: frame.perspective },
         { rotateX: `${frame.rotateX}deg` },
@@ -115,8 +115,8 @@ export function StackedCard({
 const styles = StyleSheet.create({
   outer: {
     position: 'absolute',
-    borderCurve: 'continuous',
     transformOrigin: 'top center',
+    overflow: 'visible',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowRadius: 16,
@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
   inner: {
     flex: 1,
     overflow: 'hidden',
-    borderCurve: 'continuous',
     backgroundColor: 'transparent',
   },
   fade: {
@@ -132,6 +131,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundImage:
-      'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(226,226,228,0.12) 45%, rgba(206,206,210,0.38) 100%)',
+      'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(214,214,218,0.2) 50%, rgba(188,188,194,0.5) 100%)',
   },
 });

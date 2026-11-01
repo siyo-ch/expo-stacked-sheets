@@ -11,21 +11,23 @@ import {
   ROTATE_DEEP,
   ROTATE_FRONT,
   SIDE_INSET,
+  INBOX_FILL,
+  OVERHANG,
   dismissTravel,
   sheetFrame,
 } from './sheetLayout.ts';
 
 assert.ok(PERSPECTIVE >= 700 && PERSPECTIVE <= 1200);
-assert.ok(ROTATE_DEEP > ROTATE_FRONT);
-assert.ok(ROTATE_DEEP <= 12, `deep lean ${ROTATE_DEEP} is still a hard tilt`);
-assert.equal(SIDE_INSET, 10);
-assert.ok(ROTATE_FRONT >= 6 && ROTATE_FRONT <= 9);
-assert.equal(RADIUS, 46);
+assert.ok(ROTATE_FRONT >= 0 && ROTATE_FRONT <= 6);
+assert.ok(ROTATE_DEEP > ROTATE_FRONT && ROTATE_DEEP <= 10);
+assert.equal(SIDE_INSET, 12);
+assert.ok(RADIUS >= 37 && RADIUS <= 40);
 assert.ok(MOTION_DURATION >= 280 && MOTION_DURATION <= 320);
 assert.equal(MOTION_EASING, 'ease-out');
-assert.equal(REF_FIRST, 160);
-assert.equal(REF_FIRST + REF_STEP, 465);
-assert.equal(REF_FIRST + REF_STEP * 2, 770);
+assert.equal(REF_SCREEN, 852);
+assert.equal(REF_FIRST, 133);
+assert.equal(REF_STEP, 254);
+assert.ok(INBOX_FILL > 0.82 && INBOX_FILL < 0.96);
 
 /** Visible width ratio from just under the radius to near the next card. */
 function widthRatio(angleDeg: number, screen = 393) {
@@ -39,29 +41,32 @@ function widthRatio(angleDeg: number, screen = 393) {
 for (const angle of [ROTATE_FRONT, (ROTATE_FRONT + ROTATE_DEEP) / 2, ROTATE_DEEP]) {
   const ratio = widthRatio(angle);
   assert.ok(
-    ratio >= 0.94 && ratio <= 0.972,
+    ratio >= 0.96 && ratio <= 0.995,
     `top/lower width at ${angle}deg was ${ratio.toFixed(3)}`,
   );
 }
 
-const ref = 1024;
-const back = sheetFrame({ presented: 2, index: 0, height: ref, topInset: 59 });
-const middle = sheetFrame({ presented: 2, index: 1, height: ref, topInset: 59 });
-const front = sheetFrame({ presented: 2, index: 2, height: ref, topInset: 59 });
+const phone = 852;
+const back = sheetFrame({ presented: 2, index: 0, height: phone, topInset: 59 });
+const middle = sheetFrame({ presented: 2, index: 1, height: phone, topInset: 59 });
+const front = sheetFrame({ presented: 2, index: 2, height: phone, topInset: 59 });
 
-assert.ok(Math.abs(back.top - 160) < 0.5, `inbox top ${back.top}`);
-assert.ok(Math.abs(middle.top - 465) < 0.5, `middle top ${middle.top}`);
-assert.ok(Math.abs(front.top - 770) < 0.5, `front top ${front.top}`);
+assert.ok(Math.abs(back.top - 133) < 0.5, `inbox top ${back.top}`);
+assert.ok(Math.abs(middle.top - 387) < 0.5, `middle top ${middle.top}`);
+assert.ok(Math.abs(front.top - 641) < 0.5, `front top ${front.top}`);
+assert.ok(Math.abs(middle.top - back.top - 254) < 0.5, `peek ${middle.top - back.top}`);
 assert.equal(front.rotateX, ROTATE_FRONT);
 assert.ok(middle.rotateX > front.rotateX);
 assert.ok(back.rotateX > middle.rotateX);
 assert.ok(back.rotateX <= 12);
 assert.equal(front.dim, 0);
 assert.equal(middle.dim, 1);
-assert.equal(back.face, ref);
-assert.ok(back.top + back.face > ref + 100, 'inbox runs past the bottom of the screen');
-assert.ok(middle.top + middle.face > ref + 100, 'covered draft runs past the bottom');
-assert.ok(front.top + front.face > ref + 100, 'front card runs past the bottom');
+assert.equal(back.face, phone + OVERHANG);
+assert.ok(back.fill < 1, 'covered inbox is translucent');
+assert.equal(front.fill, 1);
+assert.ok(back.top + back.face > phone + 200, 'inbox runs past the bottom of the screen');
+assert.ok(middle.top + middle.face > phone + 200, 'covered draft runs past the bottom');
+assert.ok(front.top + front.face > phone + 200, 'front card runs past the bottom');
 assert.equal(front.radius, RADIUS);
 assert.equal(front.inset, SIDE_INSET);
 assert.equal(back.inset, SIDE_INSET);
@@ -75,31 +80,39 @@ assert.ok(
 );
 assert.ok(shortBack.top / 700 - REF_FIRST / REF_SCREEN < 0.001);
 
-const inboxAlone = sheetFrame({ presented: 0, index: 0, height: ref, topInset: 59 });
+const image = 1024;
+const imageBack = sheetFrame({ presented: 2, index: 0, height: image, topInset: 59 });
+const imageMid = sheetFrame({ presented: 2, index: 1, height: image, topInset: 59 });
+const imageFront = sheetFrame({ presented: 2, index: 2, height: image, topInset: 59 });
+assert.ok(Math.abs(imageBack.top - 160) < 1.5, `image inbox ${imageBack.top}`);
+assert.ok(Math.abs(imageMid.top - 465) < 1.5, `image middle ${imageMid.top}`);
+assert.ok(Math.abs(imageFront.top - 770) < 1.5, `image front ${imageFront.top}`);
+
+const inboxAlone = sheetFrame({ presented: 0, index: 0, height: phone, topInset: 59 });
 assert.equal(inboxAlone.top, 0);
 assert.equal(inboxAlone.rotateX, 0);
 assert.equal(inboxAlone.radius, 0);
 assert.equal(inboxAlone.hidden, 0);
 
-const risingEarly = sheetFrame({ presented: 1.2, index: 2, height: ref, topInset: 59 });
-const risingLate = sheetFrame({ presented: 1.85, index: 2, height: ref, topInset: 59 });
+const risingEarly = sheetFrame({ presented: 1.2, index: 2, height: phone, topInset: 59 });
+const risingLate = sheetFrame({ presented: 1.85, index: 2, height: phone, topInset: 59 });
 assert.equal(risingEarly.rotateX, risingLate.rotateX);
 assert.equal(risingEarly.rotateX, ROTATE_FRONT);
 assert.ok(risingEarly.top + risingEarly.hidden > risingLate.top + risingLate.hidden);
 
-const coveredAtOne = sheetFrame({ presented: 1, index: 1, height: ref, topInset: 59 });
-const coveredAtTwo = sheetFrame({ presented: 2, index: 1, height: ref, topInset: 59 });
+const coveredAtOne = sheetFrame({ presented: 1, index: 1, height: phone, topInset: 59 });
+const coveredAtTwo = sheetFrame({ presented: 2, index: 1, height: phone, topInset: 59 });
 const leanStep = coveredAtTwo.rotateX - coveredAtOne.rotateX;
 assert.ok(leanStep > 0 && leanStep < 4, `lean step ${leanStep} should settle, not flip`);
 
-const entering = sheetFrame({ presented: 0.2, index: 1, height: ref, topInset: 59 });
+const entering = sheetFrame({ presented: 0.2, index: 1, height: phone, topInset: 59 });
 assert.equal(entering.rotateX, ROTATE_FRONT);
-assert.ok(entering.hidden > dismissTravel(ref, 59) * 0.7);
+assert.ok(entering.hidden > dismissTravel(phone, 59) * 0.7);
 
-const dragged = sheetFrame({ presented: 1.65, index: 2, height: ref, topInset: 59 });
+const dragged = sheetFrame({ presented: 1.65, index: 2, height: phone, topInset: 59 });
 assert.ok(dragged.top + dragged.hidden > front.top);
 assert.equal(dragged.rotateX, front.rotateX);
-assert.ok(dismissTravel(ref, 59) > 200);
+assert.ok(dismissTravel(phone, 59) > 200);
 
 for (const screen of [700, 852, 932, 1024]) {
   for (const presented of [0, 0.2, 1, 1.5, 2, 3]) {
@@ -115,7 +128,7 @@ for (const screen of [700, 852, 932, 1024]) {
       assert.equal(frame.scale, 1);
       assert.ok(frame.rotateX >= 0 && frame.rotateX <= ROTATE_DEEP + 0.01);
       assert.equal(frame.perspective, PERSPECTIVE);
-      assert.equal(frame.face, screen);
+      assert.ok(frame.face === screen || frame.face === screen + OVERHANG);
       assert.ok(frame.top >= -0.01);
     }
   }
