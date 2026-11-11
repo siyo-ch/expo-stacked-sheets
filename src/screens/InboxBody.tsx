@@ -1,6 +1,5 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import type { SheetBackgroundProps } from 'expo-stacked-sheets';
-import { useRef, type ComponentRef } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -60,22 +59,17 @@ function Row({
   disabled: boolean;
   openSheet: SheetBackgroundProps['openSheet'];
 }) {
-  const ref = useRef<ComponentRef<typeof View>>(null);
   const photo = notePhotos[note.id];
-  const onPress = () =>
-    ref.current?.measureInWindow((x, y, width, height) =>
-      openSheet({ title: note.title, body: note.body, image: photo }, { x, y, width, height }),
-    );
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Open ${note.title}`}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => openSheet({ title: note.title, body: note.body, image: photo })}
       style={({ pressed }) => pressed && styles.rowPressed}
     >
-      <View ref={ref} collapsable={false} style={styles.row}>
+      <View style={styles.row}>
         <View style={styles.rowCopy}>
           <Text numberOfLines={1} style={styles.rowTitle}>
             {note.title}

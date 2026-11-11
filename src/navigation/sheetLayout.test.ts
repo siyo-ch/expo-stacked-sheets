@@ -8,6 +8,9 @@ import {
   draftDockFrame,
   fullEditorFrame,
   mixEditorFrames,
+  overviewCardOpacity,
+  overviewCardProgress,
+  overviewPreviewOpacity,
 } from '../../packages/stacked-sheets/src/sheetLayout.ts';
 
 // The paper must land on the actual safe-area-aware dock, at every viewport.
@@ -63,6 +66,24 @@ assert.equal(shouldDismissCard(-150, 0, 393, false), true);
 assert.equal(shouldDismissCard(40, -900, 393, false), true);
 assert.equal(shouldDismissCard(50, 0, 393, false), false);
 assert.equal(shouldDismissCard(-400, -2000, 393, true), false);
+
+assert.equal(overviewCardOpacity(0), 0, 'closed overview shows only the dock');
+assert.equal(overviewPreviewOpacity(0), 0);
+assert.equal(overviewCardOpacity(1), 1, 'open cards are opaque');
+assert.equal(overviewCardProgress(1), 1, 'open cards reach the deck');
+assert.equal(overviewPreviewOpacity(1), 1);
+for (let i = 0; i <= 60; i++) {
+  const progress = i / 60;
+  const dockOpacity = 1 - overviewCardOpacity(progress);
+  assert.ok(
+    dockOpacity === 0 || overviewPreviewOpacity(progress) === 0,
+    'the card title and dock label never show together',
+  );
+  assert.ok(
+    dockOpacity === 0 || overviewCardProgress(progress) === 0,
+    'overlapping paper stays aligned with the dock',
+  );
+}
 console.log('sheetLayout tests passed');
 
 // A single matrix composes screen-space translation with perspective. The

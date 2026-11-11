@@ -14,8 +14,10 @@ import {
   CARD_INSET,
   CARD_RADIUS,
   SPRING,
-  clamp,
   deckFrame,
+  overviewCardOpacity,
+  overviewCardProgress,
+  overviewPreviewOpacity,
   paperTransforms,
   shouldDismissCard,
 } from './sheetLayout';
@@ -112,9 +114,10 @@ export const StackedCard = memo(function StackedCard({
   });
   const positionStyle = useAnimatedStyle(() => {
     const frame = deckFrame(slot.value, animatedCount.value, height, scroll.value);
-    const p = clamp(overview.value, 0, 1);
+    const progress = overview.value;
+    const p = overviewCardProgress(progress);
     return {
-      opacity: p,
+      opacity: overviewCardOpacity(progress),
       left: 16 + (CARD_INSET - 16) * p,
       right: 16 + (CARD_INSET - 16) * p,
       height: dock.height + (height + 160 - dock.height) * p,
@@ -126,12 +129,15 @@ export const StackedCard = memo(function StackedCard({
   });
   const paperStyle = useAnimatedStyle(() => {
     const frame = deckFrame(slot.value, animatedCount.value, height, scroll.value);
-    const p = clamp(overview.value, 0, 1);
+    const p = overviewCardProgress(overview.value);
     return {
       borderRadius: dock.radius + (CARD_RADIUS - dock.radius) * p,
       transform: paperTransforms(android, 0, 1 + (frame.cosine - 1) * p, frame.taper * p),
     };
   });
+  const previewStyle = useAnimatedStyle(() => ({
+    opacity: overviewPreviewOpacity(overview.value),
+  }));
   const openButton = (
     <Pressable
       accessibilityRole="button"
@@ -161,7 +167,11 @@ export const StackedCard = memo(function StackedCard({
       style={styles.closeHit}
       hitSlop={4}
     >
-      {android && <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />}
+      {android && (
+        <Animated.View pointerEvents="none" style={previewStyle}>
+          <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />
+        </Animated.View>
+      )}
     </Pressable>
   );
 
@@ -183,11 +193,11 @@ export const StackedCard = memo(function StackedCard({
           pointerEvents={android ? 'box-none' : 'none'}
           style={[styles.paper, paperStyle]}
         >
-          <View
+          <Animated.View
             pointerEvents="none"
             aria-hidden
             importantForAccessibility="no-hide-descendants"
-            style={styles.preview}
+            style={[styles.preview, previewStyle]}
           >
             <View style={styles.header}>
               {!android && <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />}
@@ -199,7 +209,7 @@ export const StackedCard = memo(function StackedCard({
                 <SheetPreview sheet={sheet} emptyTitle={emptyTitle} />
               )
             )}
-          </View>
+          </Animated.View>
           <View pointerEvents="none" style={styles.shade} />
           {android && openButton}
           {android && closeButton}

@@ -8,6 +8,31 @@ export function clamp(value: number, low: number, high: number) {
   'worklet';
   return Math.max(low, Math.min(high, value));
 }
+
+const DOCK_HANDOFF_PROGRESS = 0.2;
+const PREVIEW_FULL_PROGRESS = 0.55;
+
+export function overviewCardProgress(progress: number) {
+  'worklet';
+  // Match the dock's bounds throughout the crossfade, so no paper edge sticks out.
+  return clamp((progress - DOCK_HANDOFF_PROGRESS) / (1 - DOCK_HANDOFF_PROGRESS), 0, 1);
+}
+
+export function overviewCardOpacity(progress: number) {
+  'worklet';
+  return clamp(progress / DOCK_HANDOFF_PROGRESS, 0, 1);
+}
+
+export function overviewPreviewOpacity(progress: number) {
+  'worklet';
+  // Clear the card's content before its paper starts blending with the dock.
+  return clamp(
+    (progress - DOCK_HANDOFF_PROGRESS) / (PREVIEW_FULL_PROGRESS - DOCK_HANDOFF_PROGRESS),
+    0,
+    1,
+  );
+}
+
 export type EditorFrame = {
   top: number;
   width: number;

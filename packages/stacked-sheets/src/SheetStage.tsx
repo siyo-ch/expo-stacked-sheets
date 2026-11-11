@@ -20,6 +20,7 @@ import {
   SPRING,
   deckFrame,
   deckMetrics,
+  overviewCardOpacity,
   paperTransforms,
   clamp,
 } from './sheetLayout';
@@ -107,7 +108,7 @@ export function SheetStage({
   const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * 0.06 }));
   const depthStyle = useAnimatedStyle(() => ({ opacity: overview.value }));
   const dockStyle = useAnimatedStyle(() => ({
-    opacity: 1 - clamp(overview.value, 0, 1),
+    opacity: 1 - overviewCardOpacity(overview.value),
   }));
   return (
     <View style={styles.root}>
