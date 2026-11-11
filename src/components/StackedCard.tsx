@@ -1,6 +1,6 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { memo, useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
@@ -11,18 +11,18 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { notePhotos } from '../data/notePhotos';
 import { useDraft } from '../navigation/draftStore';
 import {
   CARD_INSET,
   CARD_RADIUS,
   SPRING,
+  clamp,
   deckFrame,
   paperTransform,
   shouldDismissCard,
-  clamp,
 } from '../navigation/sheetLayout';
 import { closeDraft, selectDraft, useMailView, useMotion } from '../navigation/sheetMotion';
-import { FROM_EMAIL } from '../theme';
 
 /** Overview cards contain lightweight previews, never mounted text editors. */
 export const StackedCard = memo(function StackedCard({
@@ -40,8 +40,8 @@ export const StackedCard = memo(function StackedCard({
     slot.set(withSpring(index, SPRING));
   }, [slot, index]);
   const horizontal = useSharedValue(0);
-  const gestureStart = useSharedValue(0);
   const closing = useSharedValue(false);
+  const gestureStart = useSharedValue(0);
   const pan = usePanGesture({
     enabled: mode === 'overview',
     activeOffsetX: [-12, 12],
@@ -127,24 +127,18 @@ export const StackedCard = memo(function StackedCard({
           importantForAccessibility="no-hide-descendants"
           style={[styles.paper, paperStyle]}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>新邮件</Text>
-          </View>
-          <DraftPreview id={id} />
+          <NotePreview id={id} />
           <View style={styles.shade} />
-          <View style={styles.close}>
-            <Ionicons name="close" size={29} color="#111" />
-          </View>
         </Animated.View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`打开草稿 ${index}`}
+          accessibilityLabel={`Open note ${index}`}
           onPress={() => selectDraft(id)}
           style={StyleSheet.absoluteFill}
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`关闭草稿 ${index}`}
+          accessibilityLabel={`Close note ${index}`}
           onPress={() => {
             if (closing.value) return;
             closing.value = true;
@@ -165,25 +159,27 @@ export const StackedCard = memo(function StackedCard({
     </GestureDetector>
   );
 });
-function DraftPreview({ id }: { id: string }) {
+function NotePreview({ id }: { id: string }) {
   const draft = useDraft(id);
   if (!draft) return null;
+  const photo = notePhotos[draft.sampleNoteId ?? ''];
   return (
-    <View style={styles.fields}>
-      <Text numberOfLines={1} style={styles.field}>
-        收件人：{draft.to}
-      </Text>
-      <Text numberOfLines={1} style={styles.field}>
-        抄送 / 密送，发件人：{FROM_EMAIL}
-      </Text>
-      <Text numberOfLines={1} style={styles.field}>
-        主题：{draft.subject}
-      </Text>
-      <Text numberOfLines={5} style={styles.body}>
-        {draft.body}
-      </Text>
-      <Text style={styles.signature}>发自我的 iPhone</Text>
-    </View>
+    <>
+      <View style={styles.header}>
+        <Ionicons name="close" size={22} color="#111" />
+      </View>
+      <View style={styles.content}>
+        <Text numberOfLines={1} style={styles.title}>
+          {draft.subject || 'New Note'}
+        </Text>
+        <View style={styles.excerpt}>
+          <Text numberOfLines={photo ? 5 : 6} style={styles.body}>
+            {draft.body}
+          </Text>
+          {photo && <Image source={photo.source} style={styles.photo} resizeMode="cover" />}
+        </View>
+      </View>
+    </>
   );
 }
 const styles = StyleSheet.create({
@@ -193,38 +189,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     borderRadius: CARD_RADIUS,
     backgroundColor: '#FFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.1)',
     transformOrigin: '50% 0%',
     overflow: 'hidden',
   },
-  header: { height: 74, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 17, fontWeight: '700', color: '#111' },
-  close: {
-    position: 'absolute',
-    top: 7,
-    left: 14,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FAFAFA',
-    borderColor: '#D8D8D8',
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fields: { paddingHorizontal: 20 },
-  field: {
-    minHeight: 48,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#8E8E93',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#DDD',
-  },
-  body: { fontSize: 17, color: '#111', marginTop: 18 },
-  signature: { fontSize: 17, color: '#111', marginTop: 12 },
+  header: { height: 48, justifyContent: 'center', paddingHorizontal: 22 },
+  content: { paddingHorizontal: 24, paddingTop: 4 },
+  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3, color: '#111' },
+  excerpt: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginTop: 10 },
+  body: { flex: 1, fontSize: 15, lineHeight: 23, color: '#555' },
+  photo: { width: '36%', maxWidth: 148, aspectRatio: 3 / 2, borderRadius: 8 },
+  // Deepens each card's lower half so the next card's top edge reads on white.
   shade: {
     ...StyleSheet.absoluteFill,
-    backgroundImage:
-      'linear-gradient(to bottom, rgba(0,0,0,0) 4%, rgba(0,0,0,0.12) 16%, rgba(0,0,0,0.42) 48%, rgba(0,0,0,0.42) 100%)',
+    backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.06) 100%)',
   },
 });

@@ -1,6 +1,7 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { useEffect, useRef, type ComponentRef, type RefObject } from 'react';
+import { useEffect, useRef, type ComponentRef } from 'react';
 import {
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -22,59 +23,51 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { updateDraft, useDraft } from '../navigation/draftStore';
-import { SPRING, clamp, mixEditorFrames, paperTransform, shouldMinimize } from '../navigation/sheetLayout';
+import { notePhotos } from '../data/notePhotos';
+import { getDraft, updateDraft, useDraft } from '../navigation/draftStore';
 import {
-  minimizeCompose,
+  SPRING,
+  clamp,
+  mixEditorFrames,
+  paperTransform,
+  shouldMinimize,
+} from '../navigation/sheetLayout';
+import {
   isEditing,
+  minimizeCompose,
   requestCloseTop,
   useMailView,
   useMotion,
 } from '../navigation/sheetMotion';
-import { FROM_EMAIL, colors } from '../theme';
+
 function dismissKeyboard() {
   Keyboard.dismiss();
 }
 
-/** One flat editor is pre-mounted and reused across drafts. Other drafts are overview previews. */
-const EMPTY_DRAFT = {
-  id: '',
-  to: '',
-  cc: '',
-  bcc: '',
-  subject: '',
-  body: '',
-  extrasOpen: false,
-};
+/** One flat editor is pre-mounted and reused across notes. Other notes are overview previews. */
 export function ComposeBody({ id }: { id: string | null }) {
-  const draft = useDraft(id ?? '') ?? EMPTY_DRAFT;
+  const draft = useDraft(id ?? '');
   const { mode } = useMailView();
   const { editor, frame, dock, full } = useMotion();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const top = insets.top + 4;
-  const toRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const bodyRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const lastFocus = useRef<ComponentRef<typeof TextInput> | null>(null);
-  const previousId = useRef(id);
+  const titleRef = useRef<ComponentRef<typeof TextInput>>(null);
   const dragStart = useSharedValue(full);
-  const focusEditor = () => {
-    if (isEditing(id)) (lastFocus.current ?? toRef.current)?.focus();
+  // Only a brand-new note grabs the keyboard; opening an existing one is for reading.
+  const focusIfEmpty = () => {
+    const current = getDraft(id ?? '');
+    if (isEditing(id) && current && !current.subject && !current.body)
+      titleRef.current?.focus();
   };
   useAnimatedReaction(
     () => editor.value >= 0.98,
     (ready, wasReady) => {
-      if (ready && !wasReady) runOnJS(focusEditor)();
+      if (ready && !wasReady) runOnJS(focusIfEmpty)();
     },
   );
   useEffect(() => {
-    if (previousId.current !== id) {
-      lastFocus.current = null;
-      previousId.current = id;
-    }
     if (mode !== 'compose') return;
-    // Keyboard layout starts once the sheet has arrived, rather than resizing
-    // its contents during the shared-frame transition.
     frame.set(withSpring(full, SPRING));
   }, [mode, id, frame, full]);
   const pan = usePanGesture({
@@ -96,8 +89,7 @@ export function ComposeBody({ id }: { id: string | null }) {
       'worklet';
       if (shouldMinimize(event.translationY, event.velocityY ?? 0, !!event.canceled))
         runOnJS(minimizeCompose)();
-      else
-        frame.set(withSpring(full, SPRING));
+      else frame.set(withSpring(full, SPRING));
     },
   });
   const style = useAnimatedStyle(() => {
@@ -111,6 +103,7 @@ export function ComposeBody({ id }: { id: string | null }) {
       transform: [{ matrix: paperTransform(f.top, 0, f.cosine, f.taper) }],
     };
   });
+  // Content keeps its full-screen layout; the paper frame clips it while it morphs.
   const contentStyle = useAnimatedStyle(() => ({
     left: (frame.value.width - width) / 2,
     opacity: clamp((frame.value.progress - 0.22) / 0.56, 0, 1),
@@ -118,19 +111,9 @@ export function ComposeBody({ id }: { id: string | null }) {
   const compactStyle = useAnimatedStyle(() => ({
     opacity: frame.value.compact * clamp((0.28 - frame.value.progress) / 0.28, 0, 1),
   }));
-  const field = (key: 'to' | 'cc' | 'bcc' | 'subject', label: string) => (
-    <Field
-      key={key}
-      label={label}
-      value={draft[key]}
-      inputRef={key === 'to' ? toRef : undefined}
-      onFocus={(input) => {
-        lastFocus.current = input;
-      }}
-      email={key !== 'subject'}
-      onChangeText={(value) => updateDraft(id ?? '', { [key]: value })}
-    />
-  );
+  const title = draft?.subject ?? '';
+  const photo = notePhotos[draft?.sampleNoteId ?? ''];
+
   return (
     <Animated.View
       testID="compose-editor"
@@ -140,7 +123,9 @@ export function ComposeBody({ id }: { id: string | null }) {
       importantForAccessibility={mode === 'compose' ? 'auto' : 'no-hide-descendants'}
       style={[styles.root, style]}
     >
-      <Animated.View style={[styles.editorContent, { width, height: height - top }, contentStyle]}>
+      <Animated.View
+        style={[styles.editorContent, { width, height: height - top }, contentStyle]}
+      >
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -153,37 +138,29 @@ export function ComposeBody({ id }: { id: string | null }) {
               <View style={styles.toolbar}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="关闭新邮件"
-                  testID="compose-close"
-                  onPress={requestCloseTop}
-                  style={styles.circle}
-                >
-                  <Ionicons name="close" size={26} color={colors.text} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="收起草稿"
+                  accessibilityLabel="Minimize note"
                   testID="compose-minimize"
+                  hitSlop={10}
                   onPress={(event) => {
                     if (Platform.OS === 'web')
                       (event.currentTarget as unknown as { blur?: () => void }).blur?.();
                     minimizeCompose();
                   }}
-                  style={styles.circle}
+                  style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
                 >
-                  <Ionicons name="chevron-down" size={23} color={colors.text} />
+                  <Ionicons name="chevron-down" size={22} color={INK} />
                 </Pressable>
-                <View
-                  accessibilityLabel="发送（演示不连接邮件服务器）"
-                  accessibilityState={{ disabled: true }}
-                  style={[styles.circle, styles.send]}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close note"
+                  testID="compose-close"
+                  hitSlop={10}
+                  onPress={requestCloseTop}
+                  style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
                 >
-                  <Ionicons name="arrow-up" size={25} color="#C7C7CC" />
-                </View>
+                  <Ionicons name="close" size={22} color={INK} />
+                </Pressable>
               </View>
-              <Text accessibilityRole="header" style={styles.title}>
-                新邮件
-              </Text>
             </View>
           </GestureDetector>
           <ScrollView
@@ -191,78 +168,58 @@ export function ComposeBody({ id }: { id: string | null }) {
             keyboardDismissMode="interactive"
             contentContainerStyle={styles.content}
           >
-            {field('to', '收件人：')}
-            {draft.extrasOpen && (
-              <>
-                {field('cc', '抄送：')}
-                {field('bcc', '密送：')}
-              </>
-            )}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="展开或收起抄送和密送"
-              onPress={() => updateDraft(id ?? '', { extrasOpen: !draft.extrasOpen })}
-              style={styles.fromRow}
-            >
-              <Text style={styles.from} numberOfLines={1}>
-                抄送 / 密送，发件人：{FROM_EMAIL}
-              </Text>
-            </Pressable>
-            {field('subject', '主题：')}
             <TextInput
-              ref={bodyRef}
-              accessibilityLabel="邮件正文"
-              onFocus={() => { lastFocus.current = bodyRef.current; }}
-              value={draft.body}
+              ref={titleRef}
+              accessibilityLabel="Title"
+              placeholder="Title"
+              placeholderTextColor={MUTED}
+              value={title}
+              onChangeText={(subject) => updateDraft(id ?? '', { subject })}
+              style={styles.title}
+              multiline
+              submitBehavior="blurAndSubmit"
+            />
+            {photo && (
+              <View style={styles.photoFrame}>
+                <Image
+                  source={photo.source}
+                  accessible
+                  accessibilityLabel={photo.label}
+                  style={styles.photo}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
+            <TextInput
+              accessibilityLabel="Note body"
+              placeholder="Start writing…"
+              placeholderTextColor={MUTED}
+              value={draft?.body ?? ''}
               onChangeText={(body) => updateDraft(id ?? '', { body })}
               multiline
               style={styles.body}
               textAlignVertical="top"
             />
-            <Text style={styles.signature}>发自我的 iPhone</Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </Animated.View>
-      <Animated.View pointerEvents="none" aria-hidden accessibilityElementsHidden style={[styles.compact, compactStyle]}>
-        <Text style={styles.compactTitle}>新邮件</Text>
+      <Animated.View
+        pointerEvents="none"
+        aria-hidden
+        accessibilityElementsHidden
+        style={[styles.compact, compactStyle]}
+      >
+        <Text numberOfLines={1} style={styles.compactTitle}>
+          {title || 'New Note'}
+        </Text>
       </Animated.View>
     </Animated.View>
   );
 }
-function Field({
-  label,
-  value,
-  onChangeText,
-  email,
-  inputRef,
-  onFocus,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  email?: boolean;
-  inputRef?: RefObject<ComponentRef<typeof TextInput> | null>;
-  onFocus: (input: ComponentRef<typeof TextInput> | null) => void;
-}) {
-  const ownRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const ref = inputRef ?? ownRef;
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        ref={ref}
-        accessibilityLabel={label.replace('：', '')}
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={() => onFocus(ref.current)}
-        autoCapitalize={email ? 'none' : 'sentences'}
-        autoCorrect={!email}
-        keyboardType={email ? 'email-address' : 'default'}
-        style={styles.input}
-      />
-    </View>
-  );
-}
+
+const INK = '#111';
+const MUTED = '#B0B0B5';
+
 const styles = StyleSheet.create({
   root: {
     position: 'absolute',
@@ -270,61 +227,53 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     overflow: 'hidden',
     transformOrigin: '50% 0%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   editorContent: { position: 'absolute', top: 0 },
-  compact: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  compactTitle: { fontSize: 17, fontWeight: '700', color: '#000' },
   flex: { flex: 1 },
-  header: { backgroundColor: '#FFF' },
+  compact: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  compactTitle: { fontSize: 16, fontWeight: '600', color: INK, paddingHorizontal: 24 },
+  header: { paddingBottom: 4 },
   handleButton: { height: 20, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 36, height: 5, borderRadius: 3, backgroundColor: '#C7C7CC' },
+  handle: { width: 36, height: 5, borderRadius: 3, backgroundColor: '#E0E0E0' },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 12,
-    gap: 8,
   },
-  circle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FAFAFA',
+  icon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  send: { marginLeft: 'auto' },
+  pressed: { backgroundColor: '#F2F2F2' },
+  content: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 60 },
   title: {
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '700',
-    color: '#111',
-    marginHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 20,
+    letterSpacing: -0.4,
+    color: INK,
+    padding: 0,
   },
-  content: { paddingHorizontal: 20, paddingBottom: 36 },
-  field: {
-    minHeight: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomColor: '#E5E5EA',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  photoFrame: {
+    width: '100%',
+    aspectRatio: 3 / 2,
+    borderRadius: 12,
+    marginTop: 16,
+    overflow: 'hidden',
   },
-  label: { fontSize: 17, color: '#8E8E93' },
-  input: { flex: 1, minHeight: 48, paddingVertical: 10, fontSize: 17, color: '#111' },
-  fromRow: {
-    minHeight: 50,
-    justifyContent: 'center',
-    borderBottomColor: '#E5E5EA',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  from: { color: '#8E8E93', fontSize: 14 },
+  photo: { width: '100%', height: '100%' },
   body: {
-    minHeight: 44,
+    marginTop: 16,
+    minHeight: 200,
     fontSize: 17,
-    color: '#111',
-    paddingTop: 16,
-    paddingBottom: 12,
+    lineHeight: 27,
+    color: '#333',
+    padding: 0,
   },
-  signature: { fontSize: 17, color: '#111', marginTop: 8 },
 });

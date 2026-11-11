@@ -1,12 +1,9 @@
-# Stacked mail drafts
+# Stacked notes
 
-An Expo prototype of Mail's draft workflow: a flat editor, a bottom draft bar,
-and a scrollable card overview. Sample messages only; it does not connect to a
-mail server or send messages. Drafts survive switching and minimizing within the
-current app session, but are not saved across app restarts.
-On launch, one empty draft is already minimized below the inbox to match the
-reference. Its white capsule sits at the bottom of the screen, separated from
-the rounded inbox by a black gap. Tap it to resume, or close it in the editor.
+An Expo prototype of stacked note editing, inspired by the iOS Mail draft
+switcher. It opens to six sample notes and three minimized sheets. Edits survive
+switching and minimizing within the current app session and reset on restart.
+The sample photos have separate licenses listed in the [photo credits](assets/notes/CREDITS.md).
 
 ## Run
 
@@ -31,26 +28,19 @@ To inspect performance without development-mode JavaScript overhead:
 npx expo start --no-dev --minify
 ```
 
-## Draft workflow
+## Notes workflow
 
-1. Tap the compose icon in the inbox to open a full, flat editor. The recipient
-   field receives focus and the keyboard opens. The editor has a large title,
-   a drag handle, close/minimize controls and recipient, subject and body fields.
-2. Drag the header down or tap its down arrow to minimize. A short or cancelled
-   drag springs back. Minimizing preserves all fields and leaves a “新邮件” bar
-   below the inbox, which remains scrollable and usable.
-3. Tap the bar to resume a single draft. With multiple drafts it opens the
-   overview; long-pressing the bar also opens the overview with one draft.
-4. In the overview, scroll vertically to reach drafts. Tap any visible card to
-   edit it, swipe it sideways to close it, or use that card's X. Other cards
-   settle into the vacant position. Tap the exposed background to return.
-5. The inbox compose icon can create another independent draft while previous
-   drafts are minimized. Closing removes that draft; minimizing keeps it.
+1. Tap a row to open a sample note, or tap `+` to start an empty note.
+2. Drag the editor header down or tap its down arrow to minimize the note.
+   A short or cancelled drag springs back. The list stays usable beneath the editor.
+3. Tap the bottom bar to resume a single note or view all open notes. Long-pressing
+   the bar opens the overview even when there is only one note.
+4. Scroll vertically to browse the overview. Tap a card to open it, swipe it
+   sideways to close it, or tap the exposed background to return. On iOS you can
+   also close a card by tapping its X.
 
-Each new draft pushes a separate `Compose` screen in the native stack. Selecting
-an existing draft brings its route forward without discarding the other routes.
-Android back pops only the top route. The from address is
-`navigatoricsl@gmail.com`, and the signature is `发自我的 iPhone`.
+Each open note has its own `Compose` route in the native stack. Selecting a card
+brings its route forward without discarding the other routes.
 
 ## Implementation
 

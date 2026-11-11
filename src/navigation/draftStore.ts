@@ -7,8 +7,10 @@ export type Draft = {
   bcc: string;
   subject: string;
   body: string;
+  sampleNoteId?: string;
   extrasOpen: boolean;
 };
+export type DraftContent = Partial<Pick<Draft, 'subject' | 'body' | 'sampleNoteId'>>;
 let sequence = 0;
 let drafts: Draft[] = [];
 let ids: string[] = [];
@@ -22,14 +24,15 @@ function subscribe(listener: () => void) {
     listeners.delete(listener);
   };
 }
-export function createDraft(): Draft {
+export function createDraft(init: DraftContent = {}): Draft {
   return {
     id: `draft-${++sequence}-${Date.now().toString(36)}`,
     to: '',
     cc: '',
     bcc: '',
-    subject: '',
-    body: '',
+    subject: init.subject ?? '',
+    body: init.body ?? '',
+    sampleNoteId: init.sampleNoteId,
     extrasOpen: false,
   };
 }

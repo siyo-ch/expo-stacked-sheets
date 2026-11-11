@@ -17,7 +17,8 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDraftIds } from '../navigation/draftStore';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { useDraft, useDraftIds } from '../navigation/draftStore';
 import {
   SPRING,
   deckFrame,
@@ -34,7 +35,6 @@ import {
 } from '../navigation/sheetMotion';
 import { ComposeBody } from '../screens/ComposeBody';
 import { InboxBody } from '../screens/InboxBody';
-import { ComposeFab } from './ComposeFab';
 import { StackedCard } from './StackedCard';
 
 export function MailStack() {
@@ -47,7 +47,7 @@ export function MailStack() {
   const { overview, scroll, editor, count, dock } = useMotion();
   const dockHeight = dock.height;
   const dockBottom = height - dock.top - dock.height;
-  const dockSpace = ids.length ? dockHeight + dockBottom + 6 : 0;
+  const topNote = useDraft(ids.at(-1) ?? '');
   useEffect(() => {
     count.set(withSpring(ids.length, SPRING));
     const limit = deckMetrics(height, ids.length).maxScroll;
@@ -109,13 +109,10 @@ export function MailStack() {
       ],
     };
   });
-  const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * 0.18 }));
+  const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * 0.06 }));
   const depthStyle = useAnimatedStyle(() => ({ opacity: overview.value }));
   const dockStyle = useAnimatedStyle(() => ({
     opacity: 1 - clamp(overview.value, 0, 1),
-  }));
-  const fabStyle = useAnimatedStyle(() => ({
-    opacity: (1 - clamp(overview.value, 0, 1)) * (1 - clamp(editor.value, 0, 1)),
   }));
   return (
     <View style={styles.root}>
@@ -150,7 +147,7 @@ export function MailStack() {
           >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="返回收件箱"
+                accessibilityLabel="Back to notes"
                 onPress={dismissOverview}
                 style={StyleSheet.absoluteFill}
                 pointerEvents={mode === 'overview' ? 'auto' : 'none'}
@@ -165,14 +162,6 @@ export function MailStack() {
         pointerEvents="none"
         style={[styles.statusBarCover, { height: insets.top }, depthStyle]}
       />
-      <Animated.View
-        pointerEvents={mode === 'inbox' ? 'box-none' : 'none'}
-        aria-hidden={mode !== 'inbox'}
-        accessibilityElementsHidden={mode !== 'inbox'}
-        style={[StyleSheet.absoluteFill, fabStyle]}
-      >
-        <ComposeFab bottomInset={dockSpace} />
-      </Animated.View>
       {ids.length > 0 && (
         <Animated.View
           pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
@@ -188,7 +177,7 @@ export function MailStack() {
             accessibilityRole="button"
             testID="draft-dock"
             accessibilityLabel={
-              ids.length === 1 ? '继续编辑草稿' : `查看 ${ids.length} 份草稿`
+              ids.length === 1 ? 'Resume note' : `View ${ids.length} open notes`
             }
             onPress={(event) => {
               if (Platform.OS === 'web')
@@ -199,9 +188,18 @@ export function MailStack() {
             onLongPress={showOverview}
             style={styles.dockButton}
           >
-            <Text style={styles.dockTitle}>
-              新邮件{ids.length > 1 ? `（${ids.length}）` : ''}
+            <Ionicons name="document-text-outline" size={20} color="#111" />
+            <Text numberOfLines={1} style={styles.dockTitle}>
+              {topNote?.subject || 'New Note'}
             </Text>
+            {ids.length > 1 && (
+              <>
+                <View style={styles.dockPill}>
+                  <Text style={styles.dockPillText}>{ids.length}</Text>
+                </View>
+                <Ionicons name="chevron-up" size={18} color="#111" />
+              </>
+            )}
           </Pressable>
         </Animated.View>
       )}
@@ -214,6 +212,8 @@ const styles = StyleSheet.create({
   mailbox: {
     ...StyleSheet.absoluteFill,
     backgroundColor: '#FFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.1)',
     borderRadius: 28,
     overflow: 'hidden',
     transformOrigin: '50% 0%',
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   depthShade: {
     ...StyleSheet.absoluteFill,
     backgroundImage:
-      'linear-gradient(to bottom, rgba(0,0,0,0) 12%, rgba(0,0,0,0.38) 68%, rgba(0,0,0,0.38) 100%)',
+      'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.06) 100%)',
   },
   statusBarCover: {
     position: 'absolute',
@@ -238,7 +238,29 @@ const styles = StyleSheet.create({
     right: 16,
     borderRadius: 999,
     backgroundColor: '#FFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.1)',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
   },
-  dockButton: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  dockTitle: { fontSize: 17, fontWeight: '700', color: '#000' },
+  dockButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    gap: 10,
+  },
+  dockTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111' },
+  dockPill: {
+    height: 26,
+    minWidth: 26,
+    borderRadius: 13,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F2F2F2',
+  },
+  dockPillText: { fontSize: 13, fontWeight: '500', color: '#111' },
 });

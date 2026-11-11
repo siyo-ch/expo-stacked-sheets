@@ -18,18 +18,19 @@ function dispatch(action: Parameters<typeof router.getStateForAction>[1]) {
   assert.ok(next);
   state = next;
 }
-assert.equal(state.routes.length, 2, 'startup includes a real minimized draft route');
-assert.deepEqual(getDraftIds(), [initialDraft.id]);
+assert.equal(state.routes.length, 4, 'startup includes real minimized draft routes');
+assert.equal(getDraftIds().length, 3);
+assert.equal(getDraftIds().at(-1), initialDraft.id);
 updateDraft(initialDraft.id, { subject: 'Resume startup draft' });
-const startupKey = state.routes[1].key;
+const startupKey = state.routes[3].key;
 dispatch(CommonActions.navigate('Compose', { draftId: initialDraft.id }));
-assert.equal(state.routes.length, 2, 'resuming the startup draft must not duplicate it');
-assert.equal(state.routes[1].key, startupKey);
+assert.equal(state.routes.length, 4, 'resuming the startup draft must not duplicate it');
+assert.equal(state.routes[3].key, startupKey);
 assert.equal(getDraft(initialDraft.id)?.subject, 'Resume startup draft');
-dispatch(CommonActions.goBack());
+dispatch(StackActions.popToTop());
 retainDrafts([]);
-assert.equal(state.routes.length, 1, 'closing the startup draft returns to Inbox');
-assert.deepEqual(getDraftIds(), [], 'the startup draft must not be recreated on close');
+assert.equal(state.routes.length, 1, 'closing the startup drafts returns to Inbox');
+assert.deepEqual(getDraftIds(), [], 'the startup drafts must not be recreated on close');
 
 for (const draftId of ['a', 'b', 'c'])
   dispatch(StackActions.push('Compose', { draftId }));

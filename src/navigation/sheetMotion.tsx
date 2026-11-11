@@ -32,6 +32,7 @@ import {
   getDraft,
   getDraftIds,
   retainDrafts,
+  type DraftContent,
 } from './draftStore';
 import {
   CARD_INSET,
@@ -94,12 +95,26 @@ function show(mode: MailMode, activeId = state.activeId) {
   }
 }
 
-export function openCompose() {
+export function openCompose(
+  note: DraftContent = {},
+  origin?: { x: number; y: number; width: number; height: number },
+) {
   if (!navigationRef.isReady() || closingId || (bridge && bridge.editor.value > 0.01)) return;
   if (bridge) {
-    bridge.frame.value = { ...bridge.full, top: bridge.height, progress: 0 };
+    // The editor frame is always horizontally centered; a tapped row is full
+    // width, so the sheet grows straight out of it.
+    bridge.frame.value = origin
+      ? {
+          ...bridge.full,
+          top: origin.y,
+          width: origin.width,
+          height: origin.height,
+          radius: origin.width * 0.12,
+          progress: 0,
+        }
+      : { ...bridge.full, top: bridge.height, progress: 0 };
   }
-  const draft = createDraft();
+  const draft = createDraft(note);
   addDraft(draft);
   navigationRef.dispatch(StackActions.push('Compose', { draftId: draft.id }));
   show('compose', draft.id);
