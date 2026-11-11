@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { StackRouter, StackActions, CommonActions } from '@react-navigation/routers';
-import { getDraftIds, retainDrafts, updateDraft, getDraft } from './draftStore.ts';
-import { initialDraft, initialNavigationState } from './initialMailSession.ts';
+import { createDraftStore } from '../../packages/stacked-sheets/src/draftStore.ts';
+import { createInitialNavigationState } from '../../packages/stacked-sheets/src/navigationState.ts';
+
+const { getDraftIds, retainDrafts, updateDraft, getDraft } = createDraftStore([
+  { title: 'A' },
+  { title: 'B' },
+  { title: 'C' },
+]);
+const initialDraftId = getDraftIds()[2];
+const initialNavigationState = createInitialNavigationState(getDraftIds());
 
 const router = StackRouter({ initialRouteName: 'Inbox' });
 const options = {
@@ -20,13 +28,13 @@ function dispatch(action: Parameters<typeof router.getStateForAction>[1]) {
 }
 assert.equal(state.routes.length, 4, 'startup includes real minimized draft routes');
 assert.equal(getDraftIds().length, 3);
-assert.equal(getDraftIds().at(-1), initialDraft.id);
-updateDraft(initialDraft.id, { subject: 'Resume startup draft' });
+assert.equal(getDraftIds().at(-1), initialDraftId);
+updateDraft(initialDraftId, { title: 'Resume startup draft' });
 const startupKey = state.routes[3].key;
-dispatch(CommonActions.navigate('Compose', { draftId: initialDraft.id }));
+dispatch(CommonActions.navigate('Compose', { draftId: initialDraftId }));
 assert.equal(state.routes.length, 4, 'resuming the startup draft must not duplicate it');
 assert.equal(state.routes[3].key, startupKey);
-assert.equal(getDraft(initialDraft.id)?.subject, 'Resume startup draft');
+assert.equal(getDraft(initialDraftId)?.title, 'Resume startup draft');
 dispatch(StackActions.popToTop());
 retainDrafts([]);
 assert.equal(state.routes.length, 1, 'closing the startup drafts returns to Inbox');

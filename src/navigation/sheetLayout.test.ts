@@ -8,7 +8,7 @@ import {
   draftDockFrame,
   fullEditorFrame,
   mixEditorFrames,
-} from './sheetLayout.ts';
+} from '../../packages/stacked-sheets/src/sheetLayout.ts';
 
 // The paper must land on the actual safe-area-aware dock, at every viewport.
 // Interrupted drags start from their visible frame, including a partially

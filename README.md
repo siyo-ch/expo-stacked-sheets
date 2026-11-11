@@ -1,7 +1,7 @@
 # Stacked notes
 
 An Expo prototype of stacked note editing, inspired by the iOS Mail draft
-switcher. It opens to six sample notes and three minimized sheets. Edits survive
+switcher. It opens to four sample notes and three minimized sheets. Edits survive
 switching and minimizing within the current app session and reset on restart.
 The sample photos have separate licenses listed in the [photo credits](assets/notes/CREDITS.md).
 
@@ -44,14 +44,10 @@ brings its route forward without discarding the other routes.
 
 ## Implementation
 
-- `src/navigation/RootNavigator.tsx` owns native navigation history.
-- `src/navigation/sheetMotion.tsx` coordinates inbox, editor and overview modes.
-- `src/navigation/sheetLayout.ts` contains shared projection and gesture decisions.
-- `src/navigation/draftStore.ts` exposes stable draft-ID snapshots and per-draft
-  subscriptions, so typing does not rerender the entire deck.
-- `src/components/MailStack.tsx` provides the inbox stage, draft bar and scrolling.
-- `src/components/StackedCard.tsx` renders lightweight, non-editable previews.
-- `src/screens/ComposeBody.tsx` reuses one pre-mounted editor across drafts.
+The demo imports `StackedSheets` from the [workspace package](packages/stacked-sheets/README.md).
+The library owns the native navigation history, card transforms, gestures and
+editing state. The demo supplies its notes, photos, background list and icons.
+Follow the package README to install it in another Expo project.
 
 Overview movement runs through Reanimated shared values on the UI thread. Card
 layout and gradient bounds remain fixed while transforms and opacity animate.

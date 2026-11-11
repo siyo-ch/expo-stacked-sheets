@@ -1,83 +1,32 @@
-import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { StatusBar } from 'expo-status-bar';
+import { StackedSheets, type SheetContent, type SheetIcon } from 'expo-stacked-sheets';
 
-import { MailStack } from '../components/MailStack';
-import { initialNavigationState } from './initialMailSession';
-import {
-  SheetMotionProvider,
-  navigationRef,
-  onNavigationStateChange,
-} from './sheetMotion';
-import type { RootStackParamList } from './types';
+import { notePhotos } from '../data/notePhotos';
+import { NOTES } from '../data/notes';
+import { InboxBody } from '../screens/InboxBody';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const initialSheets: readonly SheetContent[] = NOTES.slice(0, 3).map((note) => ({
+  title: note.title,
+  body: note.body,
+  image: notePhotos[note.id],
+}));
 
-const navigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: '#000000',
-    card: '#000000',
-    border: '#000000',
-  },
-};
-
-function HistoryScreen() {
-  return <View style={styles.blank} />;
-}
+const icons = {
+  close: 'close',
+  sheet: 'document-text-outline',
+  expand: 'chevron-up',
+  minimize: 'chevron-down',
+} as const satisfies Record<SheetIcon, string>;
 
 export function RootNavigator() {
   return (
-    <SheetMotionProvider>
-      <View style={styles.frame}>
-        <NavigationContainer
-          ref={navigationRef}
-          theme={navigationTheme}
-          initialState={initialNavigationState}
-          onStateChange={onNavigationStateChange}
-        >
-          <Stack.Navigator
-            initialRouteName="Inbox"
-            screenOptions={{
-              headerShown: false,
-              animation: 'none',
-              gestureEnabled: false,
-              fullScreenGestureEnabled: false,
-              freezeOnBlur: false,
-              contentStyle: styles.scene,
-            }}
-          >
-            <Stack.Screen name="Inbox" component={HistoryScreen} />
-            <Stack.Screen
-              name="Compose"
-              component={HistoryScreen}
-              getId={({ params }) => params.draftId}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-        <View collapsable={false} style={styles.stage} pointerEvents="box-none">
-          <MailStack />
-        </View>
-      </View>
-    </SheetMotionProvider>
+    <StackedSheets
+      initialSheets={initialSheets}
+      renderBackground={(props) => <InboxBody {...props} />}
+      renderStatusBar={(mode) => <StatusBar style={mode === 'overview' ? 'light' : 'dark'} animated />}
+      renderIcon={(name, size) => <Ionicons name={icons[name]} size={size} color="#111" />}
+      emptyTitle="New Note"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  frame: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  blank: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  scene: {
-    backgroundColor: '#000000',
-  },
-  stage: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1,
-  },
-});

@@ -1,5 +1,4 @@
-import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { useEffect, useRef, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
   Image,
   Keyboard,
@@ -16,29 +15,23 @@ import {
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
-  runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { notePhotos } from '../data/notePhotos';
-import { getDraft, updateDraft, useDraft } from '../navigation/draftStore';
+import { scheduleOnRN } from 'react-native-worklets';
 import {
   SPRING,
   clamp,
   mixEditorFrames,
   paperTransforms,
   shouldMinimize,
-} from '../navigation/sheetLayout';
-import {
-  isEditing,
-  minimizeCompose,
-  requestCloseTop,
-  useMailView,
-  useMotion,
-} from '../navigation/sheetMotion';
+} from './sheetLayout';
+import { useDraft, useMailView, useMotion, useSheetController } from './sheetMotion';
+import { SheetControlIcon } from './StackedCard';
+import type { SheetContent, StackedSheetsProps } from './types';
 
 const android = Platform.OS === 'android';
 
@@ -46,9 +39,18 @@ function dismissKeyboard() {
   Keyboard.dismiss();
 }
 
-/** One flat editor is pre-mounted and reused across notes. Other notes are overview previews. */
-export function ComposeBody({ id }: { id: string | null }) {
-  const draft = useDraft(id ?? '');
+/** One editor shell is reused across sheets. Other sheets render lightweight previews. */
+export function SheetEditor({
+  id,
+  emptyTitle,
+  renderEditor,
+  renderIcon,
+}: {
+  id: string | null;
+  emptyTitle: string;
+} & Pick<StackedSheetsProps, 'renderEditor' | 'renderIcon'>) {
+  const sheet = useDraft(id ?? '');
+  const { isEditing, minimizeCompose, requestCloseTop, store } = useSheetController();
   const { mode } = useMailView();
   const { editor, frame, dock, full } = useMotion();
   const { height, width } = useWindowDimensions();
@@ -56,18 +58,31 @@ export function ComposeBody({ id }: { id: string | null }) {
   const top = insets.top + 4;
   const titleRef = useRef<ComponentRef<typeof TextInput>>(null);
   const dragStart = useSharedValue(full);
-  // Only a brand-new note grabs the keyboard; opening an existing one is for reading.
-  const focusIfEmpty = () => {
-    const current = getDraft(id ?? '');
-    if (isEditing(id) && current && !current.subject && !current.body)
+  const [readyId, setReadyId] = useState<string | null>(null);
+  const customEditor = !!renderEditor;
+  const onReady = (nextId: string | null) => {
+    if (!nextId || !isEditing(nextId)) {
+      setReadyId(null);
+      return;
+    }
+    if (customEditor) {
+      setReadyId(nextId);
+      return;
+    }
+    // Existing content opens for reading. Focus the title on blank sheets.
+    const current = store.getDraft(nextId);
+    if (current && !current.title && !current.body && !current.image)
       titleRef.current?.focus();
   };
   useAnimatedReaction(
-    () => editor.value >= 0.98,
-    (ready, wasReady) => {
-      if (ready && !wasReady) runOnJS(focusIfEmpty)();
+    () => mode === 'compose' && editor.value >= 0.98 ? id : null,
+    (nextId, previousId) => {
+      if (nextId !== previousId) scheduleOnRN(onReady, nextId);
     },
   );
+  const update = useCallback((changes: Partial<SheetContent>) => {
+    if (id) store.updateDraft(id, changes);
+  }, [id, store]);
   useEffect(() => {
     if (mode !== 'compose') return;
     frame.set(withSpring(full, SPRING));
@@ -80,7 +95,7 @@ export function ComposeBody({ id }: { id: string | null }) {
       'worklet';
       cancelAnimation(frame);
       dragStart.value = frame.value;
-      runOnJS(dismissKeyboard)();
+      scheduleOnRN(dismissKeyboard);
     },
     onUpdate: (event) => {
       'worklet';
@@ -90,7 +105,7 @@ export function ComposeBody({ id }: { id: string | null }) {
     onDeactivate: (event) => {
       'worklet';
       if (shouldMinimize(event.translationY, event.velocityY ?? 0, !!event.canceled))
-        runOnJS(minimizeCompose)();
+        scheduleOnRN(minimizeCompose);
       else frame.set(withSpring(full, SPRING));
     },
   });
@@ -113,8 +128,8 @@ export function ComposeBody({ id }: { id: string | null }) {
   const compactStyle = useAnimatedStyle(() => ({
     opacity: frame.value.compact * clamp((0.28 - frame.value.progress) / 0.28, 0, 1),
   }));
-  const title = draft?.subject ?? '';
-  const photo = notePhotos[draft?.sampleNoteId ?? ''];
+  const title = sheet?.title ?? '';
+  const image = sheet?.image;
 
   return (
     <Animated.View
@@ -140,7 +155,7 @@ export function ComposeBody({ id }: { id: string | null }) {
               <View style={styles.toolbar}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Minimize note"
+                  accessibilityLabel="Minimize sheet"
                   testID="compose-minimize"
                   hitSlop={10}
                   onPress={(event) => {
@@ -150,59 +165,67 @@ export function ComposeBody({ id }: { id: string | null }) {
                   }}
                   style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
                 >
-                  <Ionicons name="chevron-down" size={22} color={INK} />
+                  <SheetControlIcon name="minimize" size={22} renderIcon={renderIcon} />
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Close note"
+                  accessibilityLabel="Close sheet"
                   testID="compose-close"
                   hitSlop={10}
                   onPress={requestCloseTop}
                   style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
                 >
-                  <Ionicons name="close" size={22} color={INK} />
+                  <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />
                 </Pressable>
               </View>
             </View>
           </GestureDetector>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            contentContainerStyle={styles.content}
-          >
-            <TextInput
-              ref={titleRef}
-              accessibilityLabel="Title"
-              placeholder="Title"
-              placeholderTextColor={MUTED}
-              value={title}
-              onChangeText={(subject) => updateDraft(id ?? '', { subject })}
-              style={styles.title}
-              multiline
-              submitBehavior="blurAndSubmit"
-            />
-            {photo && (
-              <View style={styles.photoFrame}>
-                <Image
-                  source={photo.source}
-                  accessible
-                  accessibilityLabel={photo.label}
-                  style={styles.photo}
-                  resizeMode="cover"
-                />
+          {renderEditor ? (
+            sheet && (
+              <View key={sheet.id} style={styles.flex}>
+                {renderEditor({ sheet, update, ready: mode === 'compose' && readyId === id })}
               </View>
-            )}
-            <TextInput
-              accessibilityLabel="Note body"
-              placeholder="Start writing…"
-              placeholderTextColor={MUTED}
-              value={draft?.body ?? ''}
-              onChangeText={(body) => updateDraft(id ?? '', { body })}
-              multiline
-              style={styles.body}
-              textAlignVertical="top"
-            />
-          </ScrollView>
+            )
+          ) : (
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              contentContainerStyle={styles.content}
+            >
+              <TextInput
+                ref={titleRef}
+                accessibilityLabel="Title"
+                placeholder="Title"
+                placeholderTextColor={MUTED}
+                value={title}
+                onChangeText={(nextTitle) => update({ title: nextTitle })}
+                style={styles.title}
+                multiline
+                submitBehavior="blurAndSubmit"
+              />
+              {image && (
+                <View style={styles.photoFrame}>
+                  <Image
+                    source={image.source}
+                    accessible
+                    accessibilityLabel={image.label}
+                    style={styles.photo}
+                    resizeMode="cover"
+                  />
+                </View>
+              )}
+              <TextInput
+                accessibilityLabel="Body"
+                placeholder="Start writing…"
+                placeholderTextColor={MUTED}
+                value={sheet?.body ?? ''}
+                onChangeText={(body) => update({ body })}
+                multiline
+                style={styles.body}
+                textAlignVertical="top"
+              />
+            </ScrollView>
+          )}
         </KeyboardAvoidingView>
       </Animated.View>
       <Animated.View
@@ -212,7 +235,7 @@ export function ComposeBody({ id }: { id: string | null }) {
         style={[styles.compact, compactStyle]}
       >
         <Text numberOfLines={1} style={styles.compactTitle}>
-          {title || 'New Note'}
+          {title || emptyTitle}
         </Text>
       </Animated.View>
     </Animated.View>

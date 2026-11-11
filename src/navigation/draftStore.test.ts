@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
-import {
+import { createDraftStore } from '../../packages/stacked-sheets/src/draftStore.ts';
+
+const {
   createDraft,
   addDraft,
   getDraft,
   getDraftIds,
   retainDrafts,
   updateDraft,
-} from './draftStore.ts';
+} = createDraftStore();
 const a = createDraft(),
   b = createDraft(),
   c = createDraft();
@@ -15,7 +17,7 @@ addDraft(b);
 addDraft(c);
 const ids = getDraftIds();
 const unchanged = getDraft(b.id);
-updateDraft(a.id, { subject: 'Preserved after minimize', body: 'draft body' });
+updateDraft(a.id, { title: 'Preserved after minimize', body: 'draft body' });
 assert.equal(
   getDraftIds(),
   ids,
@@ -26,7 +28,7 @@ assert.equal(
   unchanged,
   'typing must not rerender other draft previews',
 );
-assert.equal(getDraft(a.id)?.subject, 'Preserved after minimize');
+assert.equal(getDraft(a.id)?.title, 'Preserved after minimize');
 retainDrafts([a.id, c.id]);
 assert.deepEqual(
   getDraftIds(),
@@ -40,7 +42,11 @@ assert.equal(
 );
 retainDrafts([a.id]);
 assert.deepEqual(getDraftIds(), [a.id], 'back removes only the last draft route');
-assert.equal(getDraft(a.id)?.subject, 'Preserved after minimize');
+assert.equal(getDraft(a.id)?.title, 'Preserved after minimize');
 retainDrafts([]);
 assert.deepEqual(getDraftIds(), []);
+
+const other = createDraftStore([{ title: 'Independent stack' }]);
+assert.equal(other.getDraft(other.getDraftIds()[0])?.title, 'Independent stack');
+assert.deepEqual(getDraftIds(), [], 'another stack cannot add drafts to this stack');
 console.log('draftStore tests passed');

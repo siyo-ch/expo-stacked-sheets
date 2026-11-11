@@ -1,20 +1,19 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
+import type { SheetBackgroundProps } from 'expo-stacked-sheets';
 import { useRef, type ComponentRef } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { NOTES, type Note } from '../data/notes';
 import { notePhotos } from '../data/notePhotos';
-import { openCompose, useMailView } from '../navigation/sheetMotion';
+import { NOTES, type Note } from '../data/notes';
 
-export function InboxBody() {
-  const front = useMailView().mode === 'inbox';
+export function InboxBody({ active, openSheet }: SheetBackgroundProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <ScrollView
       style={styles.root}
-      scrollEnabled={front}
+      scrollEnabled={active}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 140 }}
     >
@@ -26,9 +25,9 @@ export function InboxBody() {
           accessibilityRole="button"
           accessibilityLabel="New note"
           testID="compose-fab"
-          disabled={!front}
+          disabled={!active}
           hitSlop={8}
-          onPress={() => openCompose()}
+          onPress={() => openSheet()}
           style={({ pressed }) => [styles.add, pressed && styles.pressed]}
         >
           <Ionicons name="add" size={22} color="#111" />
@@ -37,19 +36,35 @@ export function InboxBody() {
       <Text style={styles.count}>{NOTES.length} notes</Text>
       <View style={styles.list}>
         {NOTES.map((note, index) => (
-          <Row key={note.id} note={note} last={index === NOTES.length - 1} disabled={!front} />
+          <Row
+            key={note.id}
+            note={note}
+            last={index === NOTES.length - 1}
+            disabled={!active}
+            openSheet={openSheet}
+          />
         ))}
       </View>
     </ScrollView>
   );
 }
 
-function Row({ note, last, disabled }: { note: Note; last: boolean; disabled: boolean }) {
+function Row({
+  note,
+  last,
+  disabled,
+  openSheet,
+}: {
+  note: Note;
+  last: boolean;
+  disabled: boolean;
+  openSheet: SheetBackgroundProps['openSheet'];
+}) {
   const ref = useRef<ComponentRef<typeof View>>(null);
   const photo = notePhotos[note.id];
   const onPress = () =>
     ref.current?.measureInWindow((x, y, width, height) =>
-      openCompose({ subject: note.title, body: note.body, sampleNoteId: note.id }, { x, y, width, height }),
+      openSheet({ title: note.title, body: note.body, image: photo }, { x, y, width, height }),
     );
 
   return (

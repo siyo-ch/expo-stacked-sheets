@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
 import {
   StyleSheet,
   Text,
@@ -17,39 +16,37 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { useDraft, useDraftIds } from '../navigation/draftStore';
 import {
   SPRING,
   deckFrame,
   deckMetrics,
   paperTransforms,
   clamp,
-} from '../navigation/sheetLayout';
-import {
-  dismissOverview,
-  selectDraft,
-  showOverview,
-  useMailView,
-  useMotion,
-} from '../navigation/sheetMotion';
-import { ComposeBody } from '../screens/ComposeBody';
-import { InboxBody } from '../screens/InboxBody';
-import { StackedCard } from './StackedCard';
+} from './sheetLayout';
+import { SheetEditor } from './SheetEditor';
+import { useDraft, useDraftIds, useMailView, useMotion, useSheetController } from './sheetMotion';
+import { SheetControlIcon, StackedCard } from './StackedCard';
+import type { StackedSheetsProps } from './types';
 
 const android = Platform.OS === 'android';
 
-export function MailStack() {
+export function SheetStage({
+  renderBackground,
+  renderStatusBar,
+  renderPreview,
+  renderEditor,
+  renderIcon,
+  emptyTitle = 'Untitled',
+}: StackedSheetsProps) {
+  const { openSheet, dismissOverview, selectDraft, showOverview } = useSheetController();
   const ids = useDraftIds();
   const { mode, activeId } = useMailView();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  // The reference's capsule includes the home-indicator area, rather than
-  // floating above the safe area. Leave a black seam below the shortened inbox.
   const { overview, scroll, editor, count, dock } = useMotion();
   const dockHeight = dock.height;
   const dockBottom = height - dock.top - dock.height;
-  const topNote = useDraft(ids.at(-1) ?? '');
+  const topSheet = useDraft(ids.at(-1) ?? '');
   useEffect(() => {
     count.set(withSpring(ids.length, SPRING));
     const limit = deckMetrics(height, ids.length).maxScroll;
@@ -114,14 +111,11 @@ export function MailStack() {
   }));
   return (
     <View style={styles.root}>
-      <StatusBar style={mode === 'overview' ? 'light' : 'dark'} animated />
+      {renderStatusBar?.(mode)}
       <GestureDetector gesture={pan}>
         <View style={StyleSheet.absoluteFill}>
           <Animated.View
-            style={[
-              styles.mailbox,
-              inboxStyle,
-            ]}
+            style={[styles.background, inboxStyle]}
             pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
             aria-hidden={mode !== 'inbox'}
             accessibilityElementsHidden={mode !== 'inbox'}
@@ -129,7 +123,7 @@ export function MailStack() {
               mode === 'inbox' ? 'auto' : 'no-hide-descendants'
             }
           >
-            <InboxBody />
+            {renderBackground({ active: mode === 'inbox', openSheet })}
             <Animated.View pointerEvents="none" style={[styles.dim, dimStyle]} />
             <Animated.View
               pointerEvents="none"
@@ -145,13 +139,20 @@ export function MailStack() {
           >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Back to notes"
+                accessibilityLabel="Dismiss sheet overview"
                 onPress={dismissOverview}
                 style={StyleSheet.absoluteFill}
                 pointerEvents={mode === 'overview' ? 'auto' : 'none'}
               />
               {ids.map((id, index) => (
-                <StackedCard key={id} id={id} index={index + 1} />
+                <StackedCard
+                  key={id}
+                  id={id}
+                  index={index + 1}
+                  emptyTitle={emptyTitle}
+                  renderIcon={renderIcon}
+                  renderPreview={renderPreview}
+                />
               ))}
           </View>
         </View>
@@ -175,7 +176,7 @@ export function MailStack() {
             accessibilityRole="button"
             testID="draft-dock"
             accessibilityLabel={
-              ids.length === 1 ? 'Resume note' : `View ${ids.length} open notes`
+              ids.length === 1 ? 'Resume sheet' : `View ${ids.length} open sheets`
             }
             onPress={(event) => {
               if (Platform.OS === 'web')
@@ -186,28 +187,33 @@ export function MailStack() {
             onLongPress={showOverview}
             style={styles.dockButton}
           >
-            <Ionicons name="document-text-outline" size={20} color="#111" />
+            <SheetControlIcon name="sheet" size={20} renderIcon={renderIcon} />
             <Text numberOfLines={1} style={styles.dockTitle}>
-              {topNote?.subject || 'New Note'}
+              {topSheet?.title || emptyTitle}
             </Text>
             {ids.length > 1 && (
               <>
                 <View style={styles.dockPill}>
                   <Text style={styles.dockPillText}>{ids.length}</Text>
                 </View>
-                <Ionicons name="chevron-up" size={18} color="#111" />
+                <SheetControlIcon name="expand" size={18} renderIcon={renderIcon} />
               </>
             )}
           </Pressable>
         </Animated.View>
       )}
-      <ComposeBody id={activeId} />
+      <SheetEditor
+        id={activeId}
+        emptyTitle={emptyTitle}
+        renderEditor={renderEditor}
+        renderIcon={renderIcon}
+      />
     </View>
   );
 }
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFill, backgroundColor: '#000' },
-  mailbox: {
+  background: {
     ...StyleSheet.absoluteFill,
     backgroundColor: '#FFF',
     borderWidth: StyleSheet.hairlineWidth,
