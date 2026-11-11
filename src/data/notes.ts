@@ -20,21 +20,9 @@ export const NOTES: Note[] = [
     date: 'Yesterday',
   },
   {
-    id: 'ideas',
-    title: 'App Idea',
-    body: 'A place to jot things down. Open it and start writing. Close it and the note saves itself. No folders or tags.',
-    date: 'Tuesday',
-  },
-  {
     id: 'coffee',
     title: 'Pour-Over Recipe',
     body: '15 g of coffee and 240 mL of water at 92°C. Let it bloom for 30 seconds. Aim for a total brew time of 2 minutes and 30 seconds.',
     date: 'Monday',
-  },
-  {
-    id: 'quote',
-    title: 'A Line to Keep',
-    body: 'A steady pace gets you there sooner.',
-    date: 'Jun 12',
   },
 ];

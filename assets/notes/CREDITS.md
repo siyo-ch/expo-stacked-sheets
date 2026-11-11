@@ -2,9 +2,10 @@
 
 | File | Photo | Photographer | License |
 | --- | --- | --- | --- |
-| `reading.jpg` | [Open book in sun](https://commons.wikimedia.org/wiki/File:Open_book_in_sun_%28Unsplash%29.jpg) | Aaron Burden | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
-| `weekend.jpg` | [Vase of Ranunculus and Eucalyptus](https://commons.wikimedia.org/wiki/File:Vase_of_Ranunculus_and_Eucalyptus.jpg) | Anbertin20 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
-| `kyoto.jpg` | [2021 Sagano Bamboo forest in Arashiyama, Kyoto, Japan](https://commons.wikimedia.org/wiki/File:2021_Sagano_Bamboo_forest_in_Arashiyama,_Kyoto,_Japan.jpg) | Naokijp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `reading.jpg` | [An open book rests on a dark wooden table](https://unsplash.com/photos/an-open-book-rests-on-a-dark-wooden-table-6FEwTl93sLw) | Jasmin Ne | [Unsplash License](https://unsplash.com/license) |
+| `weekend.jpg` | [Pink petaled flower](https://unsplash.com/photos/pink-petaled-flower-YdAqiUkUoWA) | Han Chenxu | [Unsplash License](https://unsplash.com/license) |
+| `fuji.jpg` | [Mount Fuji in Fujinomiya, Japan](https://unsplash.com/photos/mount-fuji-in-fujinomiya-japan-KZSDCocsOEE) | Aditya Anjagi | [Unsplash License](https://unsplash.com/license) |
+| `coffee.jpg` | [Brown ceramic teacup](https://unsplash.com/photos/brown-ceramic-teacup-XtUd5SiX464) | Jakub Dziubak | [Unsplash License](https://unsplash.com/license) |
 
 The photos were cropped, resized to 1000 × 667 pixels, and compressed as JPEGs.
 The modified photos are distributed under the licenses listed above.
