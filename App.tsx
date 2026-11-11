@@ -16,7 +16,7 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <RootNavigator />
-        <NavigationBar style="light" />
+        <NavigationBar style="dark" />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
