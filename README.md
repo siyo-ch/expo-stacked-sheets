@@ -11,6 +11,9 @@ the rounded inbox by a black gap. Tap it to resume, or close it in the editor.
 ## Run
 
 Use Node.js 22.13+, 24.3+, or 26+ in the corresponding supported major version.
+The project defaults to Node.js 26.13.0 LTS via `.nvmrc` (`nvm use` if using nvm).
+Node.js 25 is unsupported by SDK 58. Install dependencies before running
+`npx expo`: without the local CLI, npm on Node.js 25 can select Expo 57 instead.
 
 ```bash
 npm install
