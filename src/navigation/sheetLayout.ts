@@ -1,12 +1,58 @@
 /** Geometry from the supplied iOS Mail video. Editing is flat; only the
  * scrollable draft overview uses perspective. All distances are in points. */
-export const SPRING = { stiffness: 340, damping: 34, mass: 1 };
+export const SPRING = { stiffness: 340, damping: 36, mass: 1, overshootClamping: true };
 export const CARD_RADIUS = 36;
 export const CARD_INSET = 12;
 export const PERSPECTIVE = 1800;
 export function clamp(value: number, low: number, high: number) {
   'worklet';
   return Math.max(low, Math.min(high, value));
+}
+export type EditorFrame = {
+  top: number;
+  width: number;
+  height: number;
+  radius: number;
+  cosine: number;
+  taper: number;
+  progress: number;
+  compact: number;
+};
+export function draftDockFrame(width: number, height: number, bottomInset: number, ios: boolean) {
+  'worklet';
+  const dockHeight = Math.max(74, bottomInset + 40);
+  const bottom = ios ? 2 : Math.max(bottomInset, 2);
+  return {
+    top: height - bottom - dockHeight,
+    width: width - 32,
+    height: dockHeight,
+    radius: dockHeight / 2,
+    cosine: 1,
+    taper: 0,
+    progress: 0,
+    compact: 1,
+  };
+}
+export function fullEditorFrame(width: number, height: number, topInset: number): EditorFrame {
+  'worklet';
+  const top = topInset + 4;
+  return { top, width, height: height - top, radius: 28, cosine: 1, taper: 0, progress: 1, compact: 0 };
+}
+/** Interpolate a captured frame, so taking over an unfinished animation never
+ * resets the paper to its fully open position. Content itself is never scaled. */
+export function mixEditorFrames(from: EditorFrame, to: EditorFrame, progress: number): EditorFrame {
+  'worklet';
+  const p = clamp(progress, 0, 1);
+  return {
+    top: from.top + (to.top - from.top) * p,
+    width: from.width + (to.width - from.width) * p,
+    height: from.height + (to.height - from.height) * p,
+    radius: from.radius + (to.radius - from.radius) * p,
+    cosine: from.cosine + (to.cosine - from.cosine) * p,
+    taper: from.taper + (to.taper - from.taper) * p,
+    progress: from.progress + (to.progress - from.progress) * p,
+    compact: from.compact + (to.compact - from.compact) * p,
+  };
 }
 export function deckMetrics(height: number, count: number) {
   'worklet';

@@ -5,7 +5,38 @@ import {
   shouldMinimize,
   shouldDismissCard,
   paperTransform,
+  draftDockFrame,
+  fullEditorFrame,
+  mixEditorFrames,
 } from './sheetLayout.ts';
+
+// The paper must land on the actual safe-area-aware dock, at every viewport.
+// Interrupted drags start from their visible frame, including a partially
+// flattened overview card; neither source dimensions nor content get reset.
+for (const [width, height, topInset, bottomInset] of [[375, 667, 20, 0], [402, 874, 62, 34], [440, 956, 62, 34], [768, 1024, 24, 20]]) {
+  for (const ios of [true, false]) {
+    const dock = draftDockFrame(width, height, bottomInset, ios);
+    const full = fullEditorFrame(width, height, topInset);
+    assert.equal(dock.top + dock.height, height - (ios ? 2 : Math.max(bottomInset, 2)));
+    assert.equal((width - dock.width) / 2, 16);
+    assert.equal(dock.radius, dock.height / 2);
+    const middle = mixEditorFrames(full, dock, 0.4);
+    assert.deepEqual(mixEditorFrames(middle, dock, 0), middle, 'gesture takeover is continuous');
+    assert.deepEqual(mixEditorFrames(middle, full, 0), middle, 'reversing keeps the current paper');
+    for (let i = 0; i <= 60; i++) {
+      const f = mixEditorFrames(full, dock, i / 60);
+      assert.ok(f.width >= dock.width && f.width <= width);
+      assert.ok(f.height >= dock.height - 1e-9 && f.height <= full.height);
+      assert.ok(f.top >= full.top && f.top <= dock.top);
+      assert.equal(f.cosine, 1, 'flat editor is never vertically squashed');
+      assert.equal(f.taper, 0);
+      assert.ok(Math.abs(f.top + f.height - (height - 2 * i / 60)) < 1e-8 || !ios, 'bottom edge stays anchored');
+    }
+    const dragged = mixEditorFrames(full, dock, 80 / (dock.top - full.top));
+    assert.ok(Math.abs(dragged.top - full.top - 80) < 1e-8, 'header tracks vertical finger travel');
+    assert.deepEqual(mixEditorFrames(full, dock, 1), dock);
+  }
+}
 
 // Overview keeps a stable card rhythm and scrolls, rather than crushing every
 // draft into the viewport. Even draft 20 must be reachable at maximum scroll.

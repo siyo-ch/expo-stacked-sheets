@@ -6,13 +6,26 @@ import {
 import {
   createContext,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { Keyboard, useWindowDimensions } from 'react-native';
-import { useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
+import { AccessibilityInfo, Keyboard, Platform, useWindowDimensions } from 'react-native';
+import {
+  cancelAnimation,
+  ReduceMotion,
+  ReducedMotionConfig,
+  runOnJS,
+  useDerivedValue,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  type SharedValue,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   addDraft,
   createDraft,
@@ -20,7 +33,15 @@ import {
   getDraftIds,
   retainDrafts,
 } from './draftStore';
-import { SPRING, deckFrame } from './sheetLayout';
+import {
+  CARD_INSET,
+  CARD_RADIUS,
+  SPRING,
+  deckFrame,
+  draftDockFrame,
+  fullEditorFrame,
+  type EditorFrame,
+} from './sheetLayout';
 import { initialDraft } from './initialMailSession';
 import type { RootStackParamList } from './types';
 
@@ -49,33 +70,34 @@ type Motion = {
   editor: SharedValue<number>;
   scroll: SharedValue<number>;
   count: SharedValue<number>;
-  originY: SharedValue<number>;
-  originX: SharedValue<number>;
-  originScaleX: SharedValue<number>;
-  originScaleY: SharedValue<number>;
+  frame: SharedValue<EditorFrame>;
+  dock: EditorFrame;
+  full: EditorFrame;
   height: number;
   width: number;
 };
 let bridge: Motion | null = null;
+let closingId: string | null = null;
 const MotionContext = createContext<Motion | null>(null);
+export function isEditing(id: string | null) {
+  return state.mode === 'compose' && state.activeId === id && !closingId;
+}
 function show(mode: MailMode, activeId = state.activeId) {
   if (mode !== 'compose') Keyboard.dismiss();
-  if (bridge && mode === 'compose' && state.mode !== 'compose') bridge.editor.value = 0;
+  const wasComposing = state.mode === 'compose';
   setState({ mode, activeId });
   if (bridge) {
+    if (mode !== 'overview') cancelAnimation(bridge.scroll);
     bridge.overview.value = withSpring(mode === 'overview' ? 1 : 0, SPRING);
-    // The editor starts its opening spring after its native view commits.
-    if (mode !== 'compose') bridge.editor.value = withSpring(0, SPRING);
+    if (mode !== 'compose' && wasComposing)
+      bridge.frame.value = withSpring(bridge.dock, SPRING);
   }
 }
 
 export function openCompose() {
-  if (!navigationRef.isReady()) return;
+  if (!navigationRef.isReady() || closingId || (bridge && bridge.editor.value > 0.01)) return;
   if (bridge) {
-    bridge.originY.value = bridge.height * 0.84;
-    bridge.originX.value = bridge.width * 0.36;
-    bridge.originScaleX.value = 0.18;
-    bridge.originScaleY.value = 0.18;
+    bridge.frame.value = { ...bridge.full, top: bridge.height, progress: 0 };
   }
   const draft = createDraft();
   addDraft(draft);
@@ -83,35 +105,41 @@ export function openCompose() {
   show('compose', draft.id);
 }
 export function selectDraft(id: string) {
-  if (!navigationRef.isReady() || !getDraft(id)) return;
+  if (!navigationRef.isReady() || !getDraft(id) || closingId) return;
+  if (isEditing(id)) return;
   if (bridge) {
     const fromDeck = state.mode === 'overview';
-    bridge.originY.value = fromDeck
-      ? deckFrame(
-          getDraftIds().indexOf(id) + 1,
-          getDraftIds().length,
-          bridge.height,
-          bridge.scroll.value,
-        ).top
-      : bridge.height * 0.92;
-    bridge.originX.value = 0;
-    bridge.originScaleX.value = 0.94;
-    bridge.originScaleY.value = fromDeck ? 0.7 : 0.07;
+    // Reversing a minimize of the same draft keeps the current frame and velocity.
+    if (bridge.editor.value > 0.01 && !fromDeck) {
+      if (state.activeId !== id) return;
+    } else if (fromDeck) {
+      const projected = deckFrame(
+        getDraftIds().indexOf(id) + 1,
+        getDraftIds().length,
+        bridge.height,
+        bridge.scroll.value,
+      );
+      bridge.frame.value = {
+        ...bridge.full,
+        top: projected.top,
+        width: bridge.width - CARD_INSET * 2,
+        height: bridge.height + 160,
+        radius: CARD_RADIUS,
+        cosine: projected.cosine,
+        taper: projected.taper,
+        progress: 0,
+      };
+    } else bridge.frame.value = bridge.dock;
   }
   navigationRef.navigate('Compose', { draftId: id });
   show('compose', id);
 }
 export function minimizeCompose() {
-  if (bridge) {
-    bridge.originY.value = bridge.height * 0.92;
-    bridge.originX.value = 0;
-    bridge.originScaleX.value = 0.94;
-    bridge.originScaleY.value = 0.07;
-  }
+  if (state.mode !== 'compose' || closingId) return;
   show('inbox');
 }
 export function showOverview() {
-  if (getDraftIds().length === 0) return;
+  if (getDraftIds().length === 0 || closingId || state.mode === 'overview' || (bridge && bridge.editor.value > 0.01)) return;
   if (bridge) bridge.scroll.value = 0;
   show('overview');
 }
@@ -120,6 +148,28 @@ export function dismissOverview() {
 }
 export function closeDraft(id: string) {
   if (!navigationRef.isReady()) return;
+  if (closingId) return;
+  if (isEditing(id) && bridge) {
+    closingId = id;
+    Keyboard.dismiss();
+    setState({ mode: 'inbox', activeId: id });
+    bridge.frame.value = withSpring(
+      { ...bridge.full, top: bridge.height, progress: 0 },
+      SPRING,
+      (finished) => {
+        if (finished) runOnJS(finishClosing)(id);
+      },
+    );
+    return;
+  }
+  removeDraftRoute(id);
+}
+function finishClosing(id: string) {
+  if (closingId !== id) return;
+  closingId = null;
+  removeDraftRoute(id);
+}
+function removeDraftRoute(id: string) {
   const root = navigationRef.getRootState();
   if (!root) return;
   const routes = root.routes.filter(
@@ -156,25 +206,30 @@ export function onNavigationStateChange(root: NavigationState | undefined) {
   }
 }
 export function SheetMotionProvider({ children }: { children: ReactNode }) {
+  const initialReduceMotion = useReducedMotion();
+  const [reduceMotion, setReduceMotion] = useState(initialReduceMotion);
+  useEffect(() => {
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => subscription.remove();
+  }, []);
+  const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const dock = useMemo(() => draftDockFrame(width, height, insets.bottom, Platform.OS === 'ios'), [width, height, insets.bottom]);
+  const full = useMemo(() => fullEditorFrame(width, height, insets.top), [width, height, insets.top]);
   const overview = useSharedValue(state.mode === 'overview' ? 1 : 0);
-  const editor = useSharedValue(state.mode === 'compose' ? 1 : 0);
+  const frame = useSharedValue(state.mode === 'compose' ? full : dock);
+  const editor = useDerivedValue(() => frame.value.progress);
   const scroll = useSharedValue(0);
   const count = useSharedValue(getDraftIds().length);
-  const originY = useSharedValue(0),
-    originX = useSharedValue(0);
-  const originScaleX = useSharedValue(0.94),
-    originScaleY = useSharedValue(0.1);
-  const { height, width } = useWindowDimensions();
   const value = useMemo(
     () => ({
       overview,
       editor,
       scroll,
       count,
-      originY,
-      originX,
-      originScaleX,
-      originScaleY,
+      frame,
+      dock,
+      full,
       height,
       width,
     }),
@@ -183,10 +238,9 @@ export function SheetMotionProvider({ children }: { children: ReactNode }) {
       editor,
       scroll,
       count,
-      originY,
-      originX,
-      originScaleX,
-      originScaleY,
+      frame,
+      dock,
+      full,
       height,
       width,
     ],
@@ -197,7 +251,12 @@ export function SheetMotionProvider({ children }: { children: ReactNode }) {
       bridge = null;
     };
   }, [value]);
-  return <MotionContext.Provider value={value}>{children}</MotionContext.Provider>;
+  return (
+    <MotionContext.Provider value={value}>
+      <ReducedMotionConfig mode={reduceMotion ? ReduceMotion.Always : ReduceMotion.Never} />
+      {children}
+    </MotionContext.Provider>
+  );
 }
 export function useMotion() {
   const value = useContext(MotionContext);

@@ -19,8 +19,9 @@ import {
   deckFrame,
   paperTransform,
   shouldDismissCard,
+  clamp,
 } from '../navigation/sheetLayout';
-import { closeDraft, selectDraft, useMotion } from '../navigation/sheetMotion';
+import { closeDraft, selectDraft, useMailView, useMotion } from '../navigation/sheetMotion';
 import { FROM_EMAIL } from '../theme';
 
 /** Overview cards contain lightweight previews, never mounted text editors. */
@@ -32,23 +33,29 @@ export const StackedCard = memo(function StackedCard({
   index: number;
 }) {
   const { width, height } = useWindowDimensions();
-  const { overview, scroll, count: animatedCount } = useMotion();
+  const { overview, scroll, count: animatedCount, dock } = useMotion();
+  const { mode } = useMailView();
   const slot = useSharedValue(index);
   useEffect(() => {
     slot.set(withSpring(index, SPRING));
   }, [slot, index]);
   const horizontal = useSharedValue(0);
+  const gestureStart = useSharedValue(0);
   const closing = useSharedValue(false);
   const pan = usePanGesture({
+    enabled: mode === 'overview',
     activeOffsetX: [-12, 12],
     failOffsetY: [-12, 12],
     onActivate: () => {
       'worklet';
-      if (!closing.value) cancelAnimation(horizontal);
+      if (!closing.value) {
+        cancelAnimation(horizontal);
+        gestureStart.value = horizontal.value;
+      }
     },
     onUpdate: (event) => {
       'worklet';
-      if (!closing.value) horizontal.value = event.translationX;
+      if (!closing.value) horizontal.value = gestureStart.value + event.translationX;
     },
     onDeactivate: (event) => {
       'worklet';
@@ -72,24 +79,28 @@ export const StackedCard = memo(function StackedCard({
           },
         );
       } else
-        horizontal.value = withSpring(0, { ...SPRING, velocity: event.velocityX ?? 0 });
+        horizontal.value = withSpring(0, { ...SPRING, velocity: event.canceled ? 0 : event.velocityX ?? 0 });
     },
   });
   const positionStyle = useAnimatedStyle(() => {
     const frame = deckFrame(slot.value, animatedCount.value, height, scroll.value);
-    const p = overview.value;
+    const p = clamp(overview.value, 0, 1);
     return {
       opacity: p,
+      left: 16 + (CARD_INSET - 16) * p,
+      right: 16 + (CARD_INSET - 16) * p,
+      height: dock.height + (height + 160 - dock.height) * p,
       transform: [
         { translateX: horizontal.value },
-        { translateY: frame.top + (1 - p) * height * 0.7 },
+        { translateY: dock.top + (frame.top - dock.top) * p },
       ],
     };
   });
   const paperStyle = useAnimatedStyle(() => {
     const frame = deckFrame(slot.value, animatedCount.value, height, scroll.value);
-    const p = overview.value;
+    const p = clamp(overview.value, 0, 1);
     return {
+      borderRadius: dock.radius + (CARD_RADIUS - dock.radius) * p,
       transform: [
         { matrix: paperTransform(0, 0, 1 + (frame.cosine - 1) * p, frame.taper * p) },
       ],

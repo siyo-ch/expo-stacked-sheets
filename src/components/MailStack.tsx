@@ -23,6 +23,7 @@ import {
   deckFrame,
   deckMetrics,
   paperTransform,
+  clamp,
 } from '../navigation/sheetLayout';
 import {
   dismissOverview,
@@ -43,10 +44,10 @@ export function MailStack() {
   const insets = useSafeAreaInsets();
   // The reference's capsule includes the home-indicator area, rather than
   // floating above the safe area. Leave a black seam below the shortened inbox.
-  const dockHeight = Math.max(74, insets.bottom + 40);
-  const dockBottom = Platform.OS === 'ios' ? 2 : Math.max(insets.bottom, 2);
+  const { overview, scroll, editor, count, dock } = useMotion();
+  const dockHeight = dock.height;
+  const dockBottom = height - dock.top - dock.height;
   const dockSpace = ids.length ? dockHeight + dockBottom + 6 : 0;
-  const { overview, scroll, editor, count } = useMotion();
   useEffect(() => {
     count.set(withSpring(ids.length, SPRING));
     const limit = deckMetrics(height, ids.length).maxScroll;
@@ -89,9 +90,12 @@ export function MailStack() {
     },
   });
   const inboxStyle = useAnimatedStyle(() => {
-    const p = overview.value;
+    const p = clamp(overview.value, 0, 1);
     const frame = deckFrame(0, count.value, height, scroll.value);
     return {
+      bottom: (dockHeight + dockBottom + 6) * clamp(count.value, 0, 1),
+      borderBottomLeftRadius: 28 + 12 * clamp(count.value, 0, 1),
+      borderBottomRightRadius: 28 + 12 * clamp(count.value, 0, 1),
       transform: [
         {
           matrix: paperTransform(
@@ -108,8 +112,10 @@ export function MailStack() {
   const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * 0.18 }));
   const depthStyle = useAnimatedStyle(() => ({ opacity: overview.value }));
   const dockStyle = useAnimatedStyle(() => ({
-    opacity: (1 - overview.value) * (1 - editor.value),
-    transform: [{ translateY: overview.value * 90 + editor.value * 90 }],
+    opacity: 1 - clamp(overview.value, 0, 1),
+  }));
+  const fabStyle = useAnimatedStyle(() => ({
+    opacity: (1 - clamp(overview.value, 0, 1)) * (1 - clamp(editor.value, 0, 1)),
   }));
   return (
     <View style={styles.root}>
@@ -119,8 +125,6 @@ export function MailStack() {
           <Animated.View
             style={[
               styles.mailbox,
-              { bottom: dockSpace },
-              ids.length > 0 && styles.mailboxWithDraft,
               inboxStyle,
             ]}
             pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
@@ -137,26 +141,38 @@ export function MailStack() {
               style={[styles.depthShade, depthStyle]}
             />
           </Animated.View>
-          {mode === 'overview' && (
-            <>
+          <View
+            style={StyleSheet.absoluteFill}
+            pointerEvents={mode === 'overview' ? 'box-none' : 'none'}
+            aria-hidden={mode !== 'overview'}
+            accessibilityElementsHidden={mode !== 'overview'}
+            importantForAccessibility={mode === 'overview' ? 'auto' : 'no-hide-descendants'}
+          >
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="返回收件箱"
                 onPress={dismissOverview}
                 style={StyleSheet.absoluteFill}
+                pointerEvents={mode === 'overview' ? 'auto' : 'none'}
               />
               {ids.map((id, index) => (
                 <StackedCard key={id} id={id} index={index + 1} />
               ))}
-            </>
-          )}
+          </View>
         </View>
       </GestureDetector>
       <Animated.View
         pointerEvents="none"
         style={[styles.statusBarCover, { height: insets.top }, depthStyle]}
       />
-      {mode === 'inbox' && <ComposeFab bottomInset={dockSpace} />}
+      <Animated.View
+        pointerEvents={mode === 'inbox' ? 'box-none' : 'none'}
+        aria-hidden={mode !== 'inbox'}
+        accessibilityElementsHidden={mode !== 'inbox'}
+        style={[StyleSheet.absoluteFill, fabStyle]}
+      >
+        <ComposeFab bottomInset={dockSpace} />
+      </Animated.View>
       {ids.length > 0 && (
         <Animated.View
           pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
@@ -164,7 +180,7 @@ export function MailStack() {
           accessibilityElementsHidden={mode !== 'inbox'}
           style={[
             styles.dock,
-            { bottom: dockBottom, height: dockHeight },
+            { top: dock.top, height: dock.height, borderRadius: dock.radius },
             dockStyle,
           ]}
         >
@@ -203,7 +219,6 @@ const styles = StyleSheet.create({
     transformOrigin: '50% 0%',
   },
   dim: { ...StyleSheet.absoluteFill, backgroundColor: '#000' },
-  mailboxWithDraft: { borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
   depthShade: {
     ...StyleSheet.absoluteFill,
     backgroundImage:
