@@ -1,6 +1,6 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { memo, useEffect } from 'react';
-import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
@@ -19,10 +19,12 @@ import {
   SPRING,
   clamp,
   deckFrame,
-  paperTransform,
+  paperTransforms,
   shouldDismissCard,
 } from '../navigation/sheetLayout';
 import { closeDraft, selectDraft, useMailView, useMotion } from '../navigation/sheetMotion';
+
+const android = Platform.OS === 'android';
 
 /** Overview cards contain lightweight previews, never mounted text editors. */
 export const StackedCard = memo(function StackedCard({
@@ -101,60 +103,69 @@ export const StackedCard = memo(function StackedCard({
     const p = clamp(overview.value, 0, 1);
     return {
       borderRadius: dock.radius + (CARD_RADIUS - dock.radius) * p,
-      transform: [
-        { matrix: paperTransform(0, 0, 1 + (frame.cosine - 1) * p, frame.taper * p) },
-      ],
+      transform: paperTransforms(android, 0, 1 + (frame.cosine - 1) * p, frame.taper * p),
     };
   });
+  const openButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open note ${index}`}
+      onPress={() => selectDraft(id)}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+  const closeButton = (
+    <Pressable
+      testID={`draft-close-${id}`}
+      accessibilityRole="button"
+      accessibilityLabel={`Close note ${index}`}
+      onPress={() => {
+        if (closing.value) return;
+        closing.value = true;
+        horizontal.set(
+          withTiming(
+            -width * 1.2,
+            { duration: 180, easing: Easing.out(Easing.cubic) },
+            (finished) => {
+              if (finished) runOnJS(closeDraft)(id);
+            },
+          ),
+        );
+      }}
+      style={styles.closeHit}
+      hitSlop={4}
+    >
+      {android && <Ionicons name="close" size={22} color="#111" />}
+    </Pressable>
+  );
 
   return (
     <GestureDetector gesture={pan}>
       <Animated.View
         testID={`draft-card-${id}`}
         collapsable={false}
+        pointerEvents={android ? 'box-none' : 'auto'}
         style={[
           styles.position,
           { height: height + 160, zIndex: index },
           positionStyle,
         ]}
       >
-        {/* UIKit's perspective hit testing does not match the projected X.
-            Keep visual projection non-interactive and hit-test in screen space. */}
+        {/* Android hit-tests its native camera transform. UIKit's matrix
+            projection uses the flat wrapper for touch targets. */}
         <Animated.View
-          pointerEvents="none"
-          aria-hidden
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
+          pointerEvents={android ? 'box-none' : 'none'}
           style={[styles.paper, paperStyle]}
         >
-          <NotePreview id={id} />
-          <View style={styles.shade} />
+          <View pointerEvents="none" aria-hidden importantForAccessibility="no-hide-descendants">
+            <NotePreview id={id} />
+          </View>
+          <View pointerEvents="none" style={styles.shade} />
+          {android && openButton}
+          {android && closeButton}
         </Animated.View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open note ${index}`}
-          onPress={() => selectDraft(id)}
-          style={StyleSheet.absoluteFill}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Close note ${index}`}
-          onPress={() => {
-            if (closing.value) return;
-            closing.value = true;
-            horizontal.set(
-              withTiming(
-                -width * 1.2,
-                { duration: 180, easing: Easing.out(Easing.cubic) },
-                (finished) => {
-                  if (finished) runOnJS(closeDraft)(id);
-                },
-              ),
-            );
-          }}
-          style={styles.closeHit}
-          hitSlop={4}
-        />
+        {!android && openButton}
+        {!android && closeButton}
       </Animated.View>
     </GestureDetector>
   );
@@ -166,7 +177,7 @@ function NotePreview({ id }: { id: string }) {
   return (
     <>
       <View style={styles.header}>
-        <Ionicons name="close" size={22} color="#111" />
+        {!android && <Ionicons name="close" size={22} color="#111" />}
       </View>
       <View style={styles.content}>
         <Text numberOfLines={1} style={styles.title}>
@@ -184,7 +195,16 @@ function NotePreview({ id }: { id: string }) {
 }
 const styles = StyleSheet.create({
   position: { position: 'absolute', top: 0, left: CARD_INSET, right: CARD_INSET },
-  closeHit: { position: 'absolute', top: 0, left: 12, width: 48, height: 48 },
+  closeHit: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    width: 48,
+    height: 48,
+    zIndex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   paper: {
     ...StyleSheet.absoluteFill,
     borderRadius: CARD_RADIUS,

@@ -29,7 +29,7 @@ import {
   SPRING,
   clamp,
   mixEditorFrames,
-  paperTransform,
+  paperTransforms,
   shouldMinimize,
 } from '../navigation/sheetLayout';
 import {
@@ -39,6 +39,8 @@ import {
   useMailView,
   useMotion,
 } from '../navigation/sheetMotion';
+
+const android = Platform.OS === 'android';
 
 function dismissKeyboard() {
   Keyboard.dismiss();
@@ -100,7 +102,7 @@ export function ComposeBody({ id }: { id: string | null }) {
       height: f.height,
       borderRadius: f.radius,
       opacity: f.progress <= 0 ? 0 : 1,
-      transform: [{ matrix: paperTransform(f.top, 0, f.cosine, f.taper) }],
+      transform: paperTransforms(android, f.top, f.cosine, f.taper),
     };
   });
   // Content keeps its full-screen layout; the paper frame clips it while it morphs.

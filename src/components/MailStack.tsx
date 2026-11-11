@@ -23,7 +23,7 @@ import {
   SPRING,
   deckFrame,
   deckMetrics,
-  paperTransform,
+  paperTransforms,
   clamp,
 } from '../navigation/sheetLayout';
 import {
@@ -36,6 +36,8 @@ import {
 import { ComposeBody } from '../screens/ComposeBody';
 import { InboxBody } from '../screens/InboxBody';
 import { StackedCard } from './StackedCard';
+
+const android = Platform.OS === 'android';
 
 export function MailStack() {
   const ids = useDraftIds();
@@ -96,17 +98,13 @@ export function MailStack() {
       bottom: (dockHeight + dockBottom + 6) * clamp(count.value, 0, 1),
       borderBottomLeftRadius: 28 + 12 * clamp(count.value, 0, 1),
       borderBottomRightRadius: 28 + 12 * clamp(count.value, 0, 1),
-      transform: [
-        {
-          matrix: paperTransform(
-            frame.top * p,
-            0,
-            1 + (frame.cosine - 1) * p,
-            frame.taper * p,
-            1 - 0.06 * p - 0.02 * editor.value,
-          ),
-        },
-      ],
+      transform: paperTransforms(
+        android,
+        frame.top * p,
+        1 + (frame.cosine - 1) * p,
+        frame.taper * p,
+        1 - 0.06 * p - 0.02 * editor.value,
+      ),
     };
   });
   const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * 0.06 }));

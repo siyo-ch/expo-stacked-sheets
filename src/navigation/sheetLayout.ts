@@ -122,3 +122,25 @@ export function paperTransform(
     1,
   ];
 }
+
+export function paperTransforms(
+  android: boolean,
+  top: number,
+  cosine: number,
+  taper: number,
+  scaleX = 1,
+) {
+  'worklet';
+  if (!android) return [{ matrix: paperTransform(top, 0, cosine, taper, scaleX) }];
+
+  // Android's native View only preserves the camera's Z perspective when
+  // decomposing transforms. Reconstruct the camera and X rotation explicitly.
+  const angle = -Math.asin(clamp(taper * PERSPECTIVE, -1, 1));
+  return [
+    { translateY: top },
+    { perspective: PERSPECTIVE },
+    { rotateX: `${angle}rad` as const },
+    { scaleX },
+    { scaleY: cosine / Math.cos(angle) },
+  ];
+}
