@@ -1,11 +1,25 @@
 # Expo Stacked Sheets
 
-Open multiple drafts, minimize them to keep using the current screen, and resume
-any draft from a card overview. Stacked Sheets is a React Native component
-inspired by the iOS Mail draft switcher.
+Stacked Sheets is an Expo component for editing multiple drafts, inspired by
+the iOS Mail draft switcher. Minimize a draft to keep using the current screen,
+then resume it from the card overview.
 
-See the [package README](packages/stacked-sheets/README.md) for installation,
-compatibility, and a minimal example for Expo SDK 58.
+## Install in your Expo app
+
+Version 1.0.0 targets **Expo SDK 58** and **React Native 0.88**. The command below
+will work once the first npm release is live. Until then, you can
+[install from a local archive](packages/stacked-sheets/README.md#demo-and-local-archives).
+
+```sh
+npx expo install expo-stacked-sheets
+```
+
+## Quick start
+
+Mount `StackedSheets` under `GestureHandlerRootView` and `SafeAreaProvider`.
+Render your screen with `renderBackground` and call `openSheet()` to open a draft.
+See the [complete example](packages/stacked-sheets/README.md#quick-start) and
+[SDK-specific install notes](packages/stacked-sheets/README.md#install).
 
 ## Run the Notes demo
 
@@ -22,13 +36,7 @@ npm start
 - Scan the QR code with Expo Go for SDK 58.
 - `npm run web` opens the web preview.
 
-To inspect performance without development-mode JavaScript overhead:
-
-```bash
-npx expo start --no-dev --minify
-```
-
-## Try the draft workflow
+### Try the draft workflow
 
 1. Tap `+` to start a draft. Tap a note row to read an existing note.
 2. Drag the editor header down or tap its down arrow to minimize the note.
