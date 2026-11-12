@@ -12,6 +12,7 @@ Android Back can close the active draft while keeping the others open.
 | React Native | 0.88.x |
 | React | 19.3.x |
 | Reanimated / Worklets | 4.7.1 / 0.13.0 |
+| Safe Area Context | `~5.10.1` or `~5.11.1`, selected by Expo CLI |
 
 Use an Expo Go client that matches SDK 58 or an Expo development build with the
 native dependencies installed. For a development build, rebuild after adding or
@@ -105,7 +106,7 @@ the repository root. Install the resulting archive in your app after installing
 the native dependencies above.
 
 ```sh
-npx expo install 'expo-stacked-sheets@file:/absolute/path/to/expo-stacked-sheets-0.1.0.tgz'
+npx expo install 'expo-stacked-sheets@file:/absolute/path/to/expo-stacked-sheets-1.0.0.tgz'
 ```
 
 ## License
