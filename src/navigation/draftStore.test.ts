@@ -49,4 +49,7 @@ assert.deepEqual(getDraftIds(), []);
 const other = createDraftStore([{ title: 'Independent stack' }]);
 assert.equal(other.getDraft(other.getDraftIds()[0])?.title, 'Independent stack');
 assert.deepEqual(getDraftIds(), [], 'another stack cannot add drafts to this stack');
+const seeded = createDraftStore([{ id: 'sheet-1', title: 'Seed' }, {}, { id: 'sheet-1' }]);
+assert.deepEqual(seeded.getDraftIds(), ['sheet-1', 'sheet-2', 'sheet-3']);
+assert.equal(seeded.createDraft().id, 'sheet-4', 'new drafts cannot reuse a seed ID');
 console.log('draftStore tests passed');

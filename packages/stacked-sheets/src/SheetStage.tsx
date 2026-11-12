@@ -36,6 +36,7 @@ export function SheetStage({
   renderStatusBar,
   renderPreview,
   renderEditor,
+  onSaveSheet,
   renderIcon,
   emptyTitle = 'Untitled',
 }: StackedSheetsProps) {
@@ -207,6 +208,7 @@ export function SheetStage({
         id={activeId}
         emptyTitle={emptyTitle}
         renderEditor={renderEditor}
+        onSaveSheet={onSaveSheet}
         renderIcon={renderIcon}
       />
     </View>

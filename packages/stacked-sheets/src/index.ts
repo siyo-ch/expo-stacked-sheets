@@ -1,5 +1,6 @@
 export { StackedSheets } from './StackedSheets';
 export type {
+  InitialSheet,
   Sheet,
   SheetBackgroundProps,
   SheetContent,

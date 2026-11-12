@@ -1,12 +1,21 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import type { SheetBackgroundProps } from 'expo-stacked-sheets';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { notePhotos } from '../data/notePhotos';
-import { NOTES, type Note } from '../data/notes';
+import type { Note } from '../data/notes';
 
-export function InboxBody({ active, openSheet }: SheetBackgroundProps) {
+export function InboxBody({
+  active,
+  notes,
+  onNewDraft,
+  onOpenNote,
+}: {
+  active: boolean;
+  notes: readonly Note[];
+  onNewDraft: () => void;
+  onOpenNote: (noteId: string) => void;
+}) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -22,25 +31,25 @@ export function InboxBody({ active, openSheet }: SheetBackgroundProps) {
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="New note"
+          accessibilityLabel="New draft"
           testID="compose-fab"
           disabled={!active}
           hitSlop={8}
-          onPress={() => openSheet()}
+          onPress={onNewDraft}
           style={({ pressed }) => [styles.add, pressed && styles.pressed]}
         >
           <Ionicons name="add" size={22} color="#111" />
         </Pressable>
       </View>
-      <Text style={styles.count}>{NOTES.length} notes</Text>
+      <Text style={styles.count}>{notes.length} notes</Text>
       <View style={styles.list}>
-        {NOTES.map((note, index) => (
+        {notes.map((note, index) => (
           <Row
             key={note.id}
             note={note}
-            last={index === NOTES.length - 1}
+            last={index === notes.length - 1}
             disabled={!active}
-            openSheet={openSheet}
+            onPress={() => onOpenNote(note.id)}
           />
         ))}
       </View>
@@ -52,12 +61,12 @@ function Row({
   note,
   last,
   disabled,
-  openSheet,
+  onPress,
 }: {
   note: Note;
   last: boolean;
   disabled: boolean;
-  openSheet: SheetBackgroundProps['openSheet'];
+  onPress: () => void;
 }) {
   const photo = notePhotos[note.id];
 
@@ -66,7 +75,7 @@ function Row({
       accessibilityRole="button"
       accessibilityLabel={`Open ${note.title}`}
       disabled={disabled}
-      onPress={() => openSheet({ title: note.title, body: note.body, image: photo })}
+      onPress={onPress}
       style={({ pressed }) => pressed && styles.rowPressed}
     >
       <View style={styles.row}>

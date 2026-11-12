@@ -44,13 +44,14 @@ export function SheetEditor({
   id,
   emptyTitle,
   renderEditor,
+  onSaveSheet,
   renderIcon,
 }: {
   id: string | null;
   emptyTitle: string;
-} & Pick<StackedSheetsProps, 'renderEditor' | 'renderIcon'>) {
+} & Pick<StackedSheetsProps, 'renderEditor' | 'renderIcon' | 'onSaveSheet'>) {
   const sheet = useDraft(id ?? '');
-  const { isEditing, minimizeCompose, requestCloseTop, store } = useSheetController();
+  const { closeDraft, isEditing, minimizeCompose, requestCloseTop, store } = useSheetController();
   const { mode } = useMailView();
   const { editor, frame, dock, full } = useMotion();
   const { height, width } = useWindowDimensions();
@@ -59,6 +60,7 @@ export function SheetEditor({
   const titleRef = useRef<ComponentRef<typeof TextInput>>(null);
   const dragStart = useSharedValue(full);
   const [readyId, setReadyId] = useState<string | null>(null);
+  const [saveErrorId, setSaveErrorId] = useState<string | null>(null);
   const customEditor = !!renderEditor;
   const onReady = (nextId: string | null) => {
     if (!nextId || !isEditing(nextId)) {
@@ -130,6 +132,24 @@ export function SheetEditor({
   }));
   const title = sheet?.title ?? '';
   const image = sheet?.image;
+  const canSave = Boolean(title.trim() || sheet?.body.trim() || image);
+
+  const saveSheet = () => {
+    if (!id || !isEditing(id) || !onSaveSheet) return;
+    const current = store.getDraft(id);
+    if (!current || !(current.title.trim() || current.body.trim() || current.image)) return;
+    try {
+      if (!onSaveSheet(current)) {
+        setSaveErrorId(id);
+        return;
+      }
+    } catch {
+      setSaveErrorId(id);
+      return;
+    }
+    setSaveErrorId(null);
+    closeDraft(id);
+  };
 
   return (
     <Animated.View
@@ -167,17 +187,34 @@ export function SheetEditor({
                 >
                   <SheetControlIcon name="minimize" size={22} renderIcon={renderIcon} />
                 </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Close sheet"
-                  testID="compose-close"
-                  hitSlop={10}
-                  onPress={requestCloseTop}
-                  style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
-                >
-                  <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />
-                </Pressable>
+                <View style={styles.toolbarActions}>
+                  {onSaveSheet && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Save note"
+                      testID="compose-save"
+                      disabled={!canSave}
+                      onPress={saveSheet}
+                      style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
+                    >
+                      <Text style={[styles.saveLabel, !canSave && styles.saveDisabled]}>Save</Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close sheet"
+                    testID="compose-close"
+                    hitSlop={10}
+                    onPress={requestCloseTop}
+                    style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
+                  >
+                    <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />
+                  </Pressable>
+                </View>
               </View>
+              {saveErrorId && saveErrorId === id && (
+                <Text accessibilityRole="alert" style={styles.saveError}>Couldn’t save the note. Try again.</Text>
+              )}
             </View>
           </GestureDetector>
           {renderEditor ? (
@@ -268,6 +305,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
+  toolbarActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  saveButton: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 22 },
+  saveLabel: { color: INK, fontSize: 16, fontWeight: '600' },
+  saveDisabled: { color: MUTED },
+  saveError: { color: '#A62828', paddingHorizontal: 24, paddingTop: 4 },
   icon: {
     width: 40,
     height: 40,

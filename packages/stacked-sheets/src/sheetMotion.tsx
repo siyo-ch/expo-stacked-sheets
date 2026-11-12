@@ -37,7 +37,7 @@ import {
   fullEditorFrame,
   type EditorFrame,
 } from './sheetLayout';
-import type { SheetContent, SheetMode, SheetOrigin, SheetStackParamList } from './types';
+import type { InitialSheet, SheetContent, SheetMode, SheetOrigin, SheetStackParamList } from './types';
 
 type ViewState = { mode: SheetMode; activeId: string | null };
 
@@ -53,7 +53,7 @@ type Motion = {
   width: number;
 };
 
-export function createSheetController(initialSheets?: readonly SheetContent[]) {
+export function createSheetController(initialSheets?: readonly InitialSheet[]) {
   const store = createDraftStore(initialSheets);
   let navigation: NavigationContainerRef<SheetStackParamList> | null = null;
   const initialIds = store.getDraftIds();

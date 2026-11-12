@@ -1,14 +1,26 @@
-import type { Sheet, SheetContent } from './types';
+import type { InitialSheet, Sheet, SheetContent } from './types';
 
-export function createDraftStore(initialSheets: readonly SheetContent[] = []) {
+export function createDraftStore(initialSheets: readonly InitialSheet[] = []) {
   let sequence = 0;
-  let drafts = initialSheets.map(createDraft);
+  const reservedIds = new Set(initialSheets.map((sheet) => sheet.id));
+  const assignedIds = new Set<string>();
+  let drafts = initialSheets.map(({ id, ...content }) => {
+    if (!id || assignedIds.has(id)) return createDraft(content);
+    assignedIds.add(id);
+    return buildDraft(content, id);
+  });
   let ids = drafts.map((sheet) => sheet.id);
   const listeners = new Set<() => void>();
 
   function createDraft(content: SheetContent = {}): Sheet {
+    let id = `sheet-${++sequence}`;
+    while (reservedIds.has(id)) id = `sheet-${++sequence}`;
+    return buildDraft(content, id);
+  }
+
+  function buildDraft(content: SheetContent, id: string): Sheet {
     return {
-      id: `sheet-${++sequence}`,
+      id,
       title: content.title ?? '',
       body: content.body ?? '',
       image: content.image,

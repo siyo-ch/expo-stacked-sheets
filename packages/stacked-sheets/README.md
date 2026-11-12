@@ -71,6 +71,10 @@ const styles = StyleSheet.create({ root: { flex: 1 } });
 - `renderBackground` renders your screen and receives `openSheet`. Pass an
   optional `measureInWindow` rectangle to open a sheet from a pressed row.
 - `renderPreview` and `renderEditor` replace the default note content.
+- `onSaveSheet` adds a Save button to the editor. Commit the sheet in this
+  synchronous callback and return `true` to close it. Returning `false` or
+  throwing leaves the draft open. Give seeded `initialSheets` an optional `id`
+  if your app needs to recognize the same draft after restarting.
   A custom editor receives the active sheet, `update`, and `ready`, which indicates
   when the opening transition has settled. The library supplies the minimize
   and close controls.

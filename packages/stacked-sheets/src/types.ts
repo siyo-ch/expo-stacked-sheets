@@ -16,6 +16,8 @@ export type Sheet = {
   image?: SheetImage;
 };
 
+export type InitialSheet = SheetContent & { id?: string };
+
 export type SheetOrigin = { x: number; y: number; width: number; height: number };
 export type SheetMode = 'inbox' | 'compose' | 'overview';
 export type SheetIcon = 'sheet' | 'expand' | 'minimize' | 'close';
@@ -32,10 +34,11 @@ export type SheetEditorProps = {
 };
 
 export type StackedSheetsProps = {
-  initialSheets?: readonly SheetContent[];
+  initialSheets?: readonly InitialSheet[];
   renderBackground: (props: SheetBackgroundProps) => ReactNode;
   renderPreview?: (sheet: Sheet) => ReactNode;
   renderEditor?: (props: SheetEditorProps) => ReactNode;
+  onSaveSheet?: (sheet: Sheet) => boolean;
   renderIcon?: (name: SheetIcon, size: number) => ReactNode;
   renderStatusBar?: (mode: SheetMode) => ReactNode;
   emptyTitle?: string;
