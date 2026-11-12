@@ -1,19 +1,19 @@
-# Stacked notes
+# Expo Stacked Sheets
 
-An Expo prototype of stacked note editing, inspired by the iOS Mail draft
-switcher. It opens to four sample notes and three minimized sheets. Edits survive
-switching and minimizing within the current app session and reset on restart.
-The sample photos have separate licenses listed in the [photo credits](assets/notes/CREDITS.md).
+Open multiple drafts, minimize them to keep using the current screen, and resume
+any draft from a card overview. Stacked Sheets is a React Native component
+inspired by the iOS Mail draft switcher.
 
-## Run
+See the [package README](packages/stacked-sheets/README.md) for installation,
+compatibility, and a minimal example for Expo SDK 58.
 
-Use Node.js 22.13+, 24.3+, or 26+ in the corresponding supported major version.
-The project defaults to Node.js 26.13.0 LTS via `.nvmrc` (`nvm use` if using nvm).
-Node.js 25 is unsupported by SDK 58. Install dependencies before running
-`npx expo`: without the local CLI, npm on Node.js 25 can select Expo 57 instead.
+## Run the Notes demo
+
+The demo opens with sample notes and three minimized drafts. Use Node.js
+26.13.0 from `.nvmrc` (`nvm use` if you use nvm).
 
 ```bash
-npm install
+npm ci
 npm start
 ```
 
@@ -28,9 +28,9 @@ To inspect performance without development-mode JavaScript overhead:
 npx expo start --no-dev --minify
 ```
 
-## Notes workflow
+## Try the draft workflow
 
-1. Tap a row to open a sample note, or tap `+` to start an empty note.
+1. Tap `+` to start a draft. Tap a note row to read an existing note.
 2. Drag the editor header down or tap its down arrow to minimize the note.
    A short or cancelled drag springs back. The list stays usable beneath the editor.
 3. Tap the bottom bar to resume a single note or view all open notes. Long-pressing
@@ -39,23 +39,15 @@ npx expo start --no-dev --minify
    sideways to close it, or tap the exposed background to return. On iOS you can
    also close a card by tapping its X.
 
-Each open note has its own `Compose` route in the native stack. Selecting a card
-brings its route forward without discarding the other routes.
+## Project layout
 
-## Implementation
+- `packages/stacked-sheets/` contains the npm package, including its public API,
+  gestures, native stack, and draft state.
+- `src/` and `assets/` contain the Notes demo and its sample data. The sample
+  photos have separate licenses listed in the [photo credits](assets/notes/CREDITS.md).
 
-The demo imports `StackedSheets` from the [workspace package](packages/stacked-sheets/README.md).
-The library owns the native navigation history, card transforms, gestures and
-editing state. The demo supplies its notes, photos, background list and icons.
-Follow the package README to install it in another Expo project.
-
-Overview movement runs through Reanimated shared values on the UI thread. Card
-layout and gradient bounds remain fixed while transforms and opacity animate.
-Drag completion uses velocity-aware springs; vertical browsing has inertia and
-edge resistance. Perspective is confined to the overview, with opaque paper and
-continuous shading. The source reference is the supplied 43-second iOS Mail
-recording: the flat editor around 5s, bottom draft bar around 19s, and overview
-around 20–22s and 36–43s.
+The demo imports the npm workspace directly. To check the files that ship in the
+package, run `npm pack --workspace expo-stacked-sheets --dry-run`.
 
 ## Checks
 
@@ -65,8 +57,9 @@ npm run typecheck
 npm test
 ```
 
-Tests cover overview reachability on short and tall screens, gesture cancellation
-and flick thresholds, stable subscriptions while typing, arbitrary draft removal,
-and the actual navigation router's select/back behavior. Native gesture behavior
-and keyboard transitions also require device validation; web testing alone does
-not establish native smoothness.
+Tests cover card layout, gesture thresholds, draft state, and native-stack router
+history.
+
+## License
+
+[MIT](LICENSE)

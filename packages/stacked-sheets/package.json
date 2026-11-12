@@ -2,7 +2,10 @@
   "name": "expo-stacked-sheets",
   "version": "0.1.0",
   "description": "Stacked sheet editing and overview for Expo and React Native",
+  "keywords": ["expo", "react-native", "stacked-sheets", "drafts", "reanimated"],
   "license": "MIT",
+  "homepage": "https://github.com/Fizzbow/expo-stacked-sheets",
+  "bugs": "https://github.com/Fizzbow/expo-stacked-sheets/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Fizzbow/expo-stacked-sheets.git",

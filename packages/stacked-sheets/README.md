@@ -1,28 +1,32 @@
 # Expo Stacked Sheets
 
-An Expo-compatible React Native component for opening, minimizing, and browsing
-stacked sheets. Each open sheet has its own native-stack route. Closing a sheet
-or using Android Back can remove a single route while the other sheets remain open.
+Open multiple drafts, minimize them to keep using the current screen, and resume
+any draft from a card overview. Each draft has its own native-stack route so
+Android Back can close the active draft while keeping the others open.
+
+## Compatibility
+
+| Dependency | Version |
+| --- | --- |
+| Expo SDK | 58 |
+| React Native | 0.88.x |
+| React | 19.3.x |
+| Reanimated / Worklets | 4.7.1 / 0.13.0 |
+
+Use an Expo Go client that matches SDK 58 or an Expo development build with the
+native dependencies installed. For a development build, rebuild after adding or
+changing a native dependency.
 
 ## Install
 
-This version targets Expo SDK 58 and React Native 0.88. Install the compatible
-native dependencies in your app:
+Install the native dependencies and the published package.
 
 ```sh
 npx expo install @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context react-native-gesture-handler react-native-reanimated react-native-worklets
+npx expo install expo-stacked-sheets
 ```
 
-To install an archive built from this repository, pass its package name and
-file path to Expo CLI:
-
-```sh
-npx expo install 'expo-stacked-sheets@file:/absolute/path/to/expo-stacked-sheets-0.1.0.tgz'
-```
-
-Once a release is available on your npm registry, use `npx expo install expo-stacked-sheets`.
-
-## Usage
+## Quick start
 
 Mount the component in a full-screen area. Keep a `GestureHandlerRootView` and a
 `SafeAreaProvider` above it. If the host app already provides them, reuse those
@@ -66,6 +70,11 @@ export default function App() {
 const styles = StyleSheet.create({ root: { flex: 1 } });
 ```
 
+Open a second sheet after minimizing the first. Tap the bottom bar to view the
+open drafts and select one to resume editing.
+
+## Props
+
 - `initialSheets` supplies the sheets that start minimized. Each sheet accepts a
   title, body, and optional image with a source and accessibility label.
 - `renderBackground` renders your screen and receives `openSheet`. Pass an
@@ -74,15 +83,31 @@ const styles = StyleSheet.create({ root: { flex: 1 } });
 - `onSaveSheet` adds a Save button to the editor. Commit the sheet in this
   synchronous callback and return `true` to close it. Returning `false` or
   throwing leaves the draft open. Give seeded `initialSheets` an optional `id`
-  if your app needs to recognize the same draft after restarting.
-  A custom editor receives the active sheet, `update`, and `ready`, which indicates
-  when the opening transition has settled. The library supplies the minimize
-  and close controls.
+  if your app needs to identify it across launches.
 - `renderIcon`, `renderStatusBar`, and `emptyTitle` let you match the host app.
 
-Sheet edits live for the lifetime of the mounted stack. The component owns an
-independent native-stack navigator. When using it within a host navigator, mount
-it on the active screen so the sheet navigator can handle Android Back.
+A custom editor receives the active sheet, `update`, and `ready` (whether the
+opening transition has settled). The library supplies the minimize and close
+controls.
 
-From the repository root, run `npm pack --workspace expo-stacked-sheets` to
-create an archive for testing. The Notes demo uses the workspace package directly.
+## State and navigation
+
+Sheet edits live for the lifetime of the mounted stack. Save data in the host
+app if it needs to survive a restart. The component owns an independent
+native-stack navigator. When using it within a host navigator, mount it on the
+active screen so the sheet navigator can handle Android Back.
+
+## Demo and local archives
+
+Run the Notes demo from the [repository](https://github.com/Fizzbow/expo-stacked-sheets#run-the-notes-demo).
+To try an unpublished revision, run `npm pack --workspace expo-stacked-sheets` at
+the repository root. Install the resulting archive in your app after installing
+the native dependencies above.
+
+```sh
+npx expo install 'expo-stacked-sheets@file:/absolute/path/to/expo-stacked-sheets-0.1.0.tgz'
+```
+
+## License
+
+[MIT](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/LICENSE)

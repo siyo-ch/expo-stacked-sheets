@@ -42,3 +42,6 @@ yarn-error.*
 
 # Local simulator evidence and reference recordings
 .sim-shots/
+
+# Local agent instructions
+/AGENTS.md
