@@ -12,7 +12,7 @@ Android Back can close the active draft while keeping the others open.
 | React Native | 0.88.x |
 | React | 19.3.x |
 | Reanimated / Worklets | 4.7.1 / 0.13.0 |
-| Safe Area Context | `~5.10.1` or `~5.11.1`, selected by Expo CLI |
+| Safe Area Context | `~5.10.1` or `~5.11.1`, depending on the Expo SDK patch |
 
 Use an Expo Go client that matches SDK 58 or an Expo development build with the
 native dependencies installed. For a development build, rebuild after adding or
@@ -20,11 +20,17 @@ changing a native dependency.
 
 ## Install
 
-Install the native dependencies and the published package.
+With npm, install Stacked Sheets. npm installs any missing peer dependencies.
 
 ```sh
-npx expo install @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context react-native-gesture-handler react-native-reanimated react-native-worklets
 npx expo install expo-stacked-sheets
+```
+
+If your SDK patch uses Safe Area Context 5.10.x (for example, Expo 58.0.22)
+and your app does not already have it, pin that version in the install command.
+
+```sh
+npx expo install expo-stacked-sheets 'react-native-safe-area-context@~5.10.1'
 ```
 
 ## Quick start
@@ -102,8 +108,7 @@ active screen so the sheet navigator can handle Android Back.
 
 Run the Notes demo from the [repository](https://github.com/Fizzbow/expo-stacked-sheets#run-the-notes-demo).
 To try an unpublished revision, run `npm pack --workspace expo-stacked-sheets` at
-the repository root. Install the resulting archive in your app after installing
-the native dependencies above.
+the repository root. Then install the resulting archive in your Expo app.
 
 ```sh
 npx expo install 'expo-stacked-sheets@file:/absolute/path/to/expo-stacked-sheets-1.0.0.tgz'
