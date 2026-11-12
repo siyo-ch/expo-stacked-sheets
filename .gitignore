@@ -45,3 +45,6 @@ yarn-error.*
 
 # Local agent instructions
 /AGENTS.md
+
+# Copied from the root README by npm prepack
+/packages/stacked-sheets/README.md

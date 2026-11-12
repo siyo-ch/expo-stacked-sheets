@@ -1,73 +1,55 @@
 # Expo Stacked Sheets
 
-Stacked Sheets is an Expo component for editing multiple drafts, inspired by
-the iOS Mail draft switcher. Minimize a draft to keep using the current screen,
-then resume it from the card overview.
+Edit multiple drafts in an Expo app. Minimize them to keep using the current
+screen, then reopen any draft from an iOS Mail-style card overview.
 
-## Install in your Expo app
+## Install
 
-Version 1.0.0 targets **Expo SDK 58** and **React Native 0.88**. The command below
-will work once the first npm release is live. Until then, you can
-[install from a local archive](packages/stacked-sheets/README.md#demo-and-local-archives).
+Requires Expo SDK 58 and React Native 0.88.
 
 ```sh
 npx expo install expo-stacked-sheets
 ```
 
-## Quick start
+If your SDK patch uses Safe Area Context 5.10.x (such as Expo 58.0.22), include
+`'react-native-safe-area-context@~5.10.1'` in the install command.
 
-Mount `StackedSheets` under `GestureHandlerRootView` and `SafeAreaProvider`.
-Render your screen with `renderBackground` and call `openSheet()` to open a draft.
-See the [complete example](packages/stacked-sheets/README.md#quick-start) and
-[SDK-specific install notes](packages/stacked-sheets/README.md#install).
+## Usage
+
+```tsx
+import { StackedSheets } from 'expo-stacked-sheets';
+import { Button } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
+export default function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StackedSheets
+          renderBackground={({ active, openSheet }) => (
+            <SafeAreaView>
+              <Button title="New draft" disabled={!active} onPress={() => openSheet()} />
+            </SafeAreaView>
+          )}
+        />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+```
+
+Reuse the providers if your app already has them. Drafts stay in memory.
+Use `onSaveSheet` to save them in your app.
+[Component props](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/packages/stacked-sheets/src/types.ts)
 
 ## Run the Notes demo
 
-The demo opens with sample notes and three minimized drafts. Use Node.js
-26.13.0 from `.nvmrc` (`nvm use` if you use nvm).
+From a [repository checkout](https://github.com/Fizzbow/expo-stacked-sheets), run
+`npm ci && npm start`. Press `i` for iOS or `a` for Android.
+[Photo credits](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/assets/notes/CREDITS.md)
 
-```bash
-npm ci
-npm start
-```
+For an unpublished build, run `npm pack --workspace expo-stacked-sheets` and
+install the resulting `.tgz` in your Expo app.
 
-- `i` opens the iOS simulator.
-- `a` opens the Android emulator.
-- Scan the QR code with Expo Go for SDK 58.
-- `npm run web` opens the web preview.
-
-### Try the draft workflow
-
-1. Tap `+` to start a draft. Tap a note row to read an existing note.
-2. Drag the editor header down or tap its down arrow to minimize the note.
-   A short or cancelled drag springs back. The list stays usable beneath the editor.
-3. Tap the bottom bar to resume a single note or view all open notes. Long-pressing
-   the bar opens the overview even when there is only one note.
-4. Scroll vertically to browse the overview. Tap a card to open it, swipe it
-   sideways to close it, or tap the exposed background to return. On iOS you can
-   also close a card by tapping its X.
-
-## Project layout
-
-- `packages/stacked-sheets/` contains the npm package, including its public API,
-  gestures, native stack, and draft state.
-- `src/` and `assets/` contain the Notes demo and its sample data. The sample
-  photos have separate licenses listed in the [photo credits](assets/notes/CREDITS.md).
-
-The demo imports the npm workspace directly. To check the files that ship in the
-package, run `npm pack --workspace expo-stacked-sheets --dry-run`.
-
-## Checks
-
-```bash
-npm run lint
-npm run typecheck
-npm test
-```
-
-Tests cover card layout, gesture thresholds, draft state, and native-stack router
-history.
-
-## License
-
-[MIT](LICENSE)
+[MIT](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/LICENSE)
