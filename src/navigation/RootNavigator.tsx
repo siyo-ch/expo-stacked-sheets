@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { StackedSheets, type InitialSheet, type Sheet, type SheetBackgroundProps, type SheetIcon } from 'expo-stacked-sheets';
 import { useEffect, useState } from 'react';
-import { BackHandler, Platform } from 'react-native';
+import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 
 import { NOTES, type Note } from '../data/notes';
 import { asNote, loadSavedNotes, saveDraftAsNote } from '../data/savedNotes';
@@ -85,11 +85,29 @@ function NotesPages({ active, openSheet, notes, navigation }: SheetBackgroundPro
         </Stack.Screen>
         <Stack.Screen
           name="Note"
-          options={{ title: '', headerBackTitle: 'Notes', headerTintColor: '#111', gestureEnabled: active }}
+          options={{
+            title: '',
+            headerBackTitle: 'Notes',
+            headerTintColor: '#111',
+            gestureEnabled: active,
+            headerShadowVisible: Platform.OS === 'android' ? false : undefined,
+          }}
         >
-          {({ route }) => <NoteDetail note={notes.find((note) => note.id === route.params.noteId)} />}
+          {({ route }) => (
+            <>
+              {Platform.OS === 'android' && <View style={styles.noteDivider} />}
+              <NoteDetail note={notes.find((note) => note.id === route.params.noteId)} />
+            </>
+          )}
         </Stack.Screen>
       </Stack.Navigator>
     </BaseNavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  noteDivider: {
+    backgroundColor: '#E8E8E8',
+    height: StyleSheet.hairlineWidth,
+  },
+});
