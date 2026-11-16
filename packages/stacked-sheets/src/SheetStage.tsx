@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import {
   StyleSheet,
-  Text,
   Pressable,
   View,
   Platform,
@@ -24,9 +23,10 @@ import {
   paperTransforms,
   clamp,
 } from './sheetLayout';
+import { SheetDockContent } from './SheetDockContent';
 import { SheetEditor } from './SheetEditor';
 import { useDraft, useDraftIds, useMailView, useMotion, useSheetController } from './sheetMotion';
-import { SheetControlIcon, StackedCard } from './StackedCard';
+import { StackedCard } from './StackedCard';
 import type { StackedSheetsProps } from './types';
 
 const android = Platform.OS === 'android';
@@ -48,7 +48,8 @@ export function SheetStage({
   const { overview, scroll, editor, count, dock } = useMotion();
   const dockHeight = dock.height;
   const dockBottom = height - dock.top - dock.height;
-  const topSheet = useDraft(ids.at(-1) ?? '');
+  const dockId = activeId && ids.includes(activeId) ? activeId : ids.at(-1);
+  const dockSheet = useDraft(dockId ?? '');
   useEffect(() => {
     count.set(withSpring(ids.length, SPRING));
     const limit = deckMetrics(height, ids.length).maxScroll;
@@ -187,25 +188,19 @@ export function SheetStage({
               else showOverview();
             }}
             onLongPress={showOverview}
-            style={styles.dockButton}
+            style={styles.fill}
           >
-            <SheetControlIcon name="sheet" size={20} renderIcon={renderIcon} />
-            <Text numberOfLines={1} style={styles.dockTitle}>
-              {topSheet?.title || emptyTitle}
-            </Text>
-            {ids.length > 1 && (
-              <>
-                <View style={styles.dockPill}>
-                  <Text style={styles.dockPillText}>{ids.length}</Text>
-                </View>
-                <SheetControlIcon name="expand" size={18} renderIcon={renderIcon} />
-              </>
-            )}
+            <SheetDockContent
+              title={dockSheet?.title || emptyTitle}
+              count={ids.length}
+              renderIcon={renderIcon}
+            />
           </Pressable>
         </Animated.View>
       )}
       <SheetEditor
         id={activeId}
+        draftCount={ids.length}
         emptyTitle={emptyTitle}
         renderEditor={renderEditor}
         onSaveSheet={onSaveSheet}
@@ -252,22 +247,5 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
   },
-  dockButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 22,
-    gap: 10,
-  },
-  dockTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111' },
-  dockPill: {
-    height: 26,
-    minWidth: 26,
-    borderRadius: 13,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F2F2F2',
-  },
-  dockPillText: { fontSize: 13, fontWeight: '500', color: '#111' },
+  fill: { flex: 1 },
 });

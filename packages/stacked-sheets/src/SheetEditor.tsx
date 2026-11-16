@@ -30,6 +30,7 @@ import {
   shouldMinimize,
 } from './sheetLayout';
 import { useDraft, useMailView, useMotion, useSheetController } from './sheetMotion';
+import { SheetDockContent } from './SheetDockContent';
 import { SheetControlIcon } from './StackedCard';
 import type { SheetContent, StackedSheetsProps } from './types';
 
@@ -42,12 +43,14 @@ function dismissKeyboard() {
 /** One editor shell is reused across sheets. Other sheets render lightweight previews. */
 export function SheetEditor({
   id,
+  draftCount,
   emptyTitle,
   renderEditor,
   onSaveSheet,
   renderIcon,
 }: {
   id: string | null;
+  draftCount: number;
   emptyTitle: string;
 } & Pick<StackedSheetsProps, 'renderEditor' | 'renderIcon' | 'onSaveSheet'>) {
   const sheet = useDraft(id ?? '');
@@ -127,8 +130,13 @@ export function SheetEditor({
     left: (frame.value.width - width) / 2,
     opacity: clamp((frame.value.progress - 0.22) / 0.56, 0, 1),
   }));
+  // Match the real dock before the editor paper disappears at the end of the spring.
   const compactStyle = useAnimatedStyle(() => ({
-    opacity: frame.value.compact * clamp((0.28 - frame.value.progress) / 0.28, 0, 1),
+    opacity: clamp(frame.value.compact / 0.96, 0, 1)
+      * clamp((0.28 - frame.value.progress) / 0.24, 0, 1),
+  }));
+  const compactControlsStyle = useAnimatedStyle(() => ({
+    opacity: clamp((0.12 - frame.value.progress) / 0.1, 0, 1),
   }));
   const title = sheet?.title ?? '';
   const image = sheet?.image;
@@ -271,9 +279,12 @@ export function SheetEditor({
         accessibilityElementsHidden
         style={[styles.compact, compactStyle]}
       >
-        <Text numberOfLines={1} style={styles.compactTitle}>
-          {title || emptyTitle}
-        </Text>
+        <SheetDockContent
+          title={title || emptyTitle}
+          count={draftCount}
+          renderIcon={renderIcon}
+          controlsStyle={compactControlsStyle}
+        />
       </Animated.View>
     </Animated.View>
   );
@@ -294,8 +305,7 @@ const styles = StyleSheet.create({
   },
   editorContent: { position: 'absolute', top: 0 },
   flex: { flex: 1 },
-  compact: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  compactTitle: { fontSize: 16, fontWeight: '600', color: INK, paddingHorizontal: 24 },
+  compact: { ...StyleSheet.absoluteFill },
   header: { paddingBottom: 4 },
   handleButton: { height: 20, alignItems: 'center', justifyContent: 'center' },
   handle: { width: 36, height: 5, borderRadius: 3, backgroundColor: '#E0E0E0' },
