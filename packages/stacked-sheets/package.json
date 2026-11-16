@@ -4,11 +4,11 @@
   "description": "Stacked sheet editing and overview for Expo and React Native",
   "keywords": ["expo", "react-native", "stacked-sheets", "drafts", "reanimated"],
   "license": "MIT",
-  "homepage": "https://github.com/Fizzbow/expo-stacked-sheets",
-  "bugs": "https://github.com/Fizzbow/expo-stacked-sheets/issues",
+  "homepage": "https://github.com/siyo-ch/expo-stacked-sheets",
+  "bugs": "https://github.com/siyo-ch/expo-stacked-sheets/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Fizzbow/expo-stacked-sheets.git",
+    "url": "git+https://github.com/siyo-ch/expo-stacked-sheets.git",
     "directory": "packages/stacked-sheets"
   },
   "main": "./src/index.ts",

@@ -9,8 +9,8 @@ screen, then reopen any draft from an iOS Mail-style card overview.
 
 [Watch the 13-second Notes demo][demo-video]
 
-[demo-cover]: https://raw.githubusercontent.com/Fizzbow/expo-stacked-sheets/main/assets/demo/notes-demo-cover.jpg
-[demo-video]: https://cdn.jsdelivr.net/gh/Fizzbow/expo-stacked-sheets@main/assets/demo/notes-demo.mp4
+[demo-cover]: https://raw.githubusercontent.com/siyo-ch/expo-stacked-sheets/main/assets/demo/notes-demo-cover.jpg
+[demo-video]: https://cdn.jsdelivr.net/gh/siyo-ch/expo-stacked-sheets@main/assets/demo/notes-demo.mp4
 
 ## Install
 
@@ -50,15 +50,15 @@ export default function App() {
 
 Reuse the providers if your app already has them. Drafts stay in memory.
 Use `onSaveSheet` to save them in your app.
-[Component props](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/packages/stacked-sheets/src/types.ts)
+[Component props](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/packages/stacked-sheets/src/types.ts)
 
 ## Run the Notes demo
 
-From a [repository checkout](https://github.com/Fizzbow/expo-stacked-sheets), run
+From a [repository checkout](https://github.com/siyo-ch/expo-stacked-sheets), run
 `npm ci && npm start`. Press `i` for iOS or `a` for Android.
-[Photo credits](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/assets/notes/CREDITS.md)
+[Photo credits](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/assets/notes/CREDITS.md)
 
 For an unpublished build, run `npm pack --workspace expo-stacked-sheets` and
 install the resulting `.tgz` in your Expo app.
 
-[MIT](https://github.com/Fizzbow/expo-stacked-sheets/blob/main/LICENSE)
+[MIT](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/LICENSE)
