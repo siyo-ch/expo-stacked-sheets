@@ -23,7 +23,7 @@
   },
   "files": ["src"],
   "scripts": {
-    "prepack": "node -e \"require('node:fs').copyFileSync('../../README.md', 'README.md')\""
+    "prepack": "node scripts/prepare-readme.cjs"
   },
   "peerDependencies": {
     "@react-navigation/native": "^7.5.1",

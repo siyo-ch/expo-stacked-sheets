@@ -5,9 +5,11 @@ screen, then reopen any draft from an iOS Mail-style card overview.
 
 ## Demo
 
-[![Three drafts in the Notes card overview][demo-cover]][demo-video]
+<!-- github-demo:start -->
 
-[Watch the 13-second Notes demo][demo-video]
+https://github.com/user-attachments/assets/261228f0-c8bd-4038-9ed0-a47d9804354e
+
+<!-- github-demo:end -->
 
 [demo-cover]: https://raw.githubusercontent.com/siyo-ch/expo-stacked-sheets/main/assets/demo/notes-demo-cover.jpg
 [demo-video]: https://cdn.jsdelivr.net/gh/siyo-ch/expo-stacked-sheets@main/assets/demo/notes-demo.mp4
