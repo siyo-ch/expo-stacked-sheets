@@ -15,9 +15,33 @@ type NotesParamList = { Notes: undefined; Note: { noteId: string } };
 const Stack = createNativeStackNavigator<NotesParamList>();
 
 const initialDrafts: readonly InitialSheet[] = [
-  { id: 'draft-gifts', title: 'Gift Ideas', body: 'A small ceramic vase, a used novel, or tickets to a matinee.' },
-  { id: 'draft-repairs', title: 'Things to Fix', body: 'Tighten the desk lamp and replace the batteries in the kitchen clock.' },
-  { id: 'draft-packing', title: 'Packing List', body: 'Charger\nLight jacket\nNotebook\nWater bottle' },
+  {
+    id: 'draft-gifts',
+    title: 'Breakfast Notes',
+    body: 'A slow breakfast and a little time to make plans for the day.',
+    image: {
+      source: require('../../assets/notes/draft-breakfast.jpg'),
+      label: 'Breakfast',
+    },
+  },
+  {
+    id: 'draft-repairs',
+    title: 'Around the Block',
+    body: 'Took the long way home. A few familiar corners, and something new to notice along the way.',
+    image: {
+      source: require('../../assets/notes/draft-street.jpg'),
+      label: 'A neighborhood street',
+    },
+  },
+  {
+    id: 'draft-packing',
+    title: 'By the Sea',
+    body: 'No plans for the afternoon. Just a walk by the water and the sound of the waves.',
+    image: {
+      source: require('../../assets/notes/draft-sea.jpg'),
+      label: 'The sea',
+    },
+  },
 ];
 
 const icons = {
