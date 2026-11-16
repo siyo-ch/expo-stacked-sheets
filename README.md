@@ -3,6 +3,15 @@
 Edit multiple drafts in an Expo app. Minimize them to keep using the current
 screen, then reopen any draft from an iOS Mail-style card overview.
 
+## Demo
+
+[![Three drafts in the Notes card overview][demo-cover]][demo-video]
+
+[Watch the 13-second Notes demo][demo-video]
+
+[demo-cover]: https://raw.githubusercontent.com/Fizzbow/expo-stacked-sheets/main/assets/demo/notes-demo-cover.jpg
+[demo-video]: https://cdn.jsdelivr.net/gh/Fizzbow/expo-stacked-sheets@main/assets/demo/notes-demo.mp4
+
 ## Install
 
 Requires Expo SDK 58 and React Native 0.88.

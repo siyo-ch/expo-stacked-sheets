@@ -1,6 +1,6 @@
 {
   "name": "expo-stacked-sheets",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Stacked sheet editing and overview for Expo and React Native",
   "keywords": ["expo", "react-native", "stacked-sheets", "drafts", "reanimated"],
   "license": "MIT",
