@@ -1,7 +1,6 @@
 # Expo Stacked Sheets
 
-Edit multiple drafts in an Expo app. Minimize them to keep using the current
-screen, then reopen any draft from an iOS Mail-style card overview.
+Minimize drafts and reopen them from an Apple Mail–style stack in your Expo app.
 
 ## Demo
 
@@ -22,10 +21,12 @@ Requires Expo SDK 58 and React Native 0.88.
 npx expo install expo-stacked-sheets
 ```
 
-If your SDK patch uses Safe Area Context 5.10.x (such as Expo 58.0.22), include
-`'react-native-safe-area-context@~5.10.1'` in the install command.
+On Expo 58.0.22, use
+`npx expo install expo-stacked-sheets 'react-native-safe-area-context@~5.10.1'`.
 
 ## Usage
+
+Add this to `App.tsx` or a full-screen Expo Router route.
 
 ```tsx
 import { StackedSheets } from 'expo-stacked-sheets';
@@ -38,6 +39,10 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StackedSheets
+          initialSheets={[
+            { title: 'Weekend plans', body: 'Pick a place for breakfast.' },
+            { title: 'Reading list', body: 'Finish the last chapter.' },
+          ]}
           renderBackground={({ active, openSheet }) => (
             <SafeAreaView>
               <Button title="New draft" disabled={!active} onPress={() => openSheet()} />
@@ -50,8 +55,10 @@ export default function App() {
 }
 ```
 
-Reuse the providers if your app already has them. Drafts stay in memory.
-Use `onSaveSheet` to save them in your app.
+Tap the bar at the bottom to see both drafts. The down arrow minimizes a draft.
+
+Drafts stay in memory. To enable Save, pass a synchronous `onSaveSheet` callback
+that returns `true` when the save succeeds.
 [Component props](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/packages/stacked-sheets/src/types.ts)
 
 ## Run the Notes demo
@@ -59,8 +66,5 @@ Use `onSaveSheet` to save them in your app.
 From a [repository checkout](https://github.com/siyo-ch/expo-stacked-sheets), run
 `npm ci && npm start`. Press `i` for iOS or `a` for Android.
 [Photo credits](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/assets/notes/CREDITS.md)
-
-For an unpublished build, run `npm pack --workspace expo-stacked-sheets` and
-install the resulting `.tgz` in your Expo app.
 
 [MIT](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/LICENSE)
