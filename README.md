@@ -1,8 +1,6 @@
 # Expo Stacked Sheets
 
-Minimize drafts and reopen them from an Apple Mail–style stack in your Expo app.
-
-## Demo
+Minimize drafts and reopen them from an Apple Mail–style stack in your Expo app. Works on iOS and Android.
 
 <!-- github-demo:start -->
 
@@ -12,6 +10,14 @@ https://github.com/user-attachments/assets/261228f0-c8bd-4038-9ed0-a47d9804354e
 
 [demo-cover]: https://raw.githubusercontent.com/siyo-ch/expo-stacked-sheets/main/assets/demo/notes-demo-cover.jpg
 [demo-video]: https://cdn.jsdelivr.net/gh/siyo-ch/expo-stacked-sheets@main/assets/demo/notes-demo.mp4
+
+If this saves you some work, a ⭐ helps other people find it.
+
+## When to use it
+
+Use it when people work on more than one thing at a time: emails, notes, posts, or forms they want to set aside and pick up later. Each draft minimizes into a bar at the bottom, and tapping the bar fans the drafts out so any one can be reopened.
+
+If your app only ever shows one sheet at a time, a regular sheet such as React Navigation's `formSheet` is simpler.
 
 ## Install
 
