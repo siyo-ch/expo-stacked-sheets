@@ -20,17 +20,11 @@ https://github.com/user-attachments/assets/261228f0-c8bd-4038-9ed0-a47d9804354e
 
 ## Install
 
-Requires Expo SDK 58 and React Native 0.88.
+Run this in your Expo SDK 58 app. Expo selects the matching native dependencies.
 
 ```sh
-npx expo install expo-stacked-sheets \
-  react-native-reanimated react-native-worklets react-native-gesture-handler \
-  react-native-screens react-native-safe-area-context \
-  @react-navigation/native @react-navigation/native-stack
+npx expo-stacked-sheets@latest install
 ```
-
-Listing the peer dependencies lets Expo choose versions that match your SDK.
-React Navigation is required because each open sheet is a route in a native stack.
 
 ## Usage
 

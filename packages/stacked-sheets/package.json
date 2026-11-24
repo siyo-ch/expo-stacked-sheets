@@ -1,6 +1,6 @@
 {
   "name": "expo-stacked-sheets",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Apple Mail–style 3D stacked sheets for Expo and React Native, built with Reanimated and Gesture Handler.",
   "keywords": ["expo", "react-native", "stacked-sheets", "bottom-sheet", "sheet", "3d", "apple-mail", "drafts", "reanimated", "gesture-handler", "ios", "android"],
   "license": "MIT",
@@ -21,13 +21,18 @@
       "default": "./src/index.ts"
     }
   },
-  "files": ["src"],
+  "bin": {
+    "expo-stacked-sheets": "bin/cli.cjs"
+  },
+  "files": ["bin", "src"],
   "scripts": {
     "prepack": "node scripts/prepare-readme.cjs"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@react-navigation/native": "^7.5.1",
-    "@react-navigation/native-stack": "^7.21.0",
+    "@react-navigation/native-stack": "^7.21.0"
+  },
+  "peerDependencies": {
     "react": "^19.3.0",
     "react-native": ">=0.88.0",
     "react-native-gesture-handler": "^3.3.0",
