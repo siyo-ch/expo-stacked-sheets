@@ -1,0 +1,41 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead. A screen recording helps a lot for gesture and animation issues.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: A minimal snippet or a link to a repository or Snack.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - iOS
+        - Android
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device or simulator
+      placeholder: iPhone 17 Pro simulator, iOS 27
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Run `npm ls expo expo-stacked-sheets react-native react-native-reanimated react-native-gesture-handler` and paste the output.
+      render: text
+    validations:
+      required: true

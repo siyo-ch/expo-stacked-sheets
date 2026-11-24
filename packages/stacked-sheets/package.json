@@ -1,8 +1,8 @@
 {
   "name": "expo-stacked-sheets",
-  "version": "1.1.0",
-  "description": "3D stacked sheets for Expo and React Native, built with Reanimated and Gesture Handler.",
-  "keywords": ["expo", "react-native", "stacked-sheets", "bottom-sheet", "sheet", "3d", "reanimated", "gesture-handler", "ios", "android"],
+  "version": "1.1.1",
+  "description": "Apple Mail–style 3D stacked sheets for Expo and React Native, built with Reanimated and Gesture Handler.",
+  "keywords": ["expo", "react-native", "stacked-sheets", "bottom-sheet", "sheet", "3d", "apple-mail", "drafts", "reanimated", "gesture-handler", "ios", "android"],
   "license": "MIT",
   "homepage": "https://github.com/siyo-ch/expo-stacked-sheets",
   "bugs": "https://github.com/siyo-ch/expo-stacked-sheets/issues",
@@ -29,11 +29,11 @@
     "@react-navigation/native": "^7.5.1",
     "@react-navigation/native-stack": "^7.21.0",
     "react": "^19.3.0",
-    "react-native": "~0.88.0",
-    "react-native-gesture-handler": "~3.3.0",
-    "react-native-reanimated": "4.7.1",
-    "react-native-safe-area-context": "~5.10.1 || ~5.11.1",
-    "react-native-screens": "~4.30.1",
-    "react-native-worklets": "0.13.0"
+    "react-native": ">=0.88.0",
+    "react-native-gesture-handler": "^3.3.0",
+    "react-native-reanimated": "^4.7.1",
+    "react-native-safe-area-context": "^5.10.1",
+    "react-native-screens": "^4.30.1",
+    "react-native-worklets": ">=0.13.0 <1.0.0"
   }
 }
