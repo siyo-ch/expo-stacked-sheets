@@ -1,6 +1,6 @@
 # Expo Stacked Sheets
 
-Minimize drafts and reopen them from an Apple Mail–style stack in your Expo app.
+3D stacked sheets for Expo and React Native. Works on iOS and Android.
 
 ## Demo
 
@@ -45,7 +45,7 @@ export default function App() {
           ]}
           renderBackground={({ active, openSheet }) => (
             <SafeAreaView>
-              <Button title="New draft" disabled={!active} onPress={() => openSheet()} />
+              <Button title="New sheet" disabled={!active} onPress={() => openSheet()} />
             </SafeAreaView>
           )}
         />
@@ -55,9 +55,9 @@ export default function App() {
 }
 ```
 
-Tap the bar at the bottom to see both drafts. The down arrow minimizes a draft.
+Tap the bar at the bottom to see both sheets. The down arrow minimizes a sheet.
 
-Drafts stay in memory. To enable Save, pass a synchronous `onSaveSheet` callback
+Sheets stay in memory. To enable Save, pass a synchronous `onSaveSheet` callback
 that returns `true` when the save succeeds.
 [Component props](https://github.com/siyo-ch/expo-stacked-sheets/blob/main/packages/stacked-sheets/src/types.ts)
 
