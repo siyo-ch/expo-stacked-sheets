@@ -1,16 +1,21 @@
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { notePhotos } from '../data/notePhotos';
 import type { Note } from '../data/notes';
 
 export function NoteDetail({ note }: { note: Note | undefined }) {
-  if (!note) return <Text style={styles.content}>Note not found.</Text>;
+  const isDark = useColorScheme() === 'dark';
+  const titleColor = isDark ? '#F5F5F7' : '#111';
+  const dateColor = isDark ? '#8E8E93' : '#737378';
+  const bodyColor = isDark ? '#D1D1D6' : '#333';
+
+  if (!note) return <Text style={[styles.content, { color: bodyColor }]}>Note not found.</Text>;
 
   const photo = notePhotos[note.id];
 
   return (
     <ScrollView testID="note-detail" contentContainerStyle={styles.content}>
-      <Text accessibilityRole="header" style={styles.title}>{note.title}</Text>
-      <Text style={styles.date}>{note.date}</Text>
+      <Text accessibilityRole="header" style={[styles.title, { color: titleColor }]}>{note.title}</Text>
+      <Text style={[styles.date, { color: dateColor }]}>{note.date}</Text>
       {photo && (
         <View style={styles.photoFrame}>
           <Image
@@ -22,7 +27,7 @@ export function NoteDetail({ note }: { note: Note | undefined }) {
           />
         </View>
       )}
-      <Text style={styles.body}>{note.body}</Text>
+      <Text style={[styles.body, { color: bodyColor }]}>{note.body}</Text>
     </ScrollView>
   );
 }

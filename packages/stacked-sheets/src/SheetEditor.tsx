@@ -30,6 +30,7 @@ import {
   shouldMinimize,
 } from './sheetLayout';
 import { useDraft, useMailView, useMotion, useSheetController } from './sheetMotion';
+import { useSheetTheme } from './sheetTheme';
 import { SheetDockContent } from './SheetDockContent';
 import { SheetControlIcon } from './StackedCard';
 import type { SheetContent, StackedSheetsProps } from './types';
@@ -59,6 +60,7 @@ export function SheetEditor({
   const { editor, frame, dock, full } = useMotion();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const theme = useSheetTheme();
   const top = insets.top + 4;
   const titleRef = useRef<ComponentRef<typeof TextInput>>(null);
   const dragStart = useSharedValue(full);
@@ -166,7 +168,11 @@ export function SheetEditor({
       aria-hidden={mode !== 'compose'}
       accessibilityElementsHidden={mode !== 'compose'}
       importantForAccessibility={mode === 'compose' ? 'auto' : 'no-hide-descendants'}
-      style={[styles.root, style]}
+      style={[
+        styles.root,
+        { backgroundColor: theme.surface, borderColor: theme.editorBorder },
+        style,
+      ]}
     >
       <Animated.View
         style={[styles.editorContent, { width, height: height - top }, contentStyle]}
@@ -178,7 +184,7 @@ export function SheetEditor({
           <GestureDetector gesture={pan}>
             <View style={styles.header}>
               <View style={styles.handleButton}>
-                <View style={styles.handle} />
+                <View style={[styles.handle, { backgroundColor: theme.handle }]} />
               </View>
               <View style={styles.toolbar}>
                 <Pressable
@@ -191,7 +197,10 @@ export function SheetEditor({
                       (event.currentTarget as unknown as { blur?: () => void }).blur?.();
                     minimizeCompose();
                   }}
-                  style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.icon,
+                    pressed && { backgroundColor: theme.pressed },
+                  ]}
                 >
                   <SheetControlIcon name="minimize" size={22} renderIcon={renderIcon} />
                 </Pressable>
@@ -203,9 +212,19 @@ export function SheetEditor({
                       testID="compose-save"
                       disabled={!canSave}
                       onPress={saveSheet}
-                      style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
+                      style={({ pressed }) => [
+                        styles.saveButton,
+                        pressed && { backgroundColor: theme.pressed },
+                      ]}
                     >
-                      <Text style={[styles.saveLabel, !canSave && styles.saveDisabled]}>Save</Text>
+                      <Text
+                        style={[
+                          styles.saveLabel,
+                          { color: canSave ? theme.ink : theme.muted },
+                        ]}
+                      >
+                        Save
+                      </Text>
                     </Pressable>
                   )}
                   <Pressable
@@ -214,14 +233,19 @@ export function SheetEditor({
                     testID="compose-close"
                     hitSlop={10}
                     onPress={requestCloseTop}
-                    style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
+                    style={({ pressed }) => [
+                      styles.icon,
+                      pressed && { backgroundColor: theme.pressed },
+                    ]}
                   >
                     <SheetControlIcon name="close" size={22} renderIcon={renderIcon} />
                   </Pressable>
                 </View>
               </View>
               {saveErrorId && saveErrorId === id && (
-                <Text accessibilityRole="alert" style={styles.saveError}>Couldn’t save the note. Try again.</Text>
+                <Text accessibilityRole="alert" style={[styles.saveError, { color: theme.danger }]}>
+                  Couldn’t save the note. Try again.
+                </Text>
               )}
             </View>
           </GestureDetector>
@@ -241,10 +265,11 @@ export function SheetEditor({
                 ref={titleRef}
                 accessibilityLabel="Title"
                 placeholder="Title"
-                placeholderTextColor={MUTED}
+                placeholderTextColor={theme.muted}
+                keyboardAppearance={theme.colorScheme}
                 value={title}
                 onChangeText={(nextTitle) => update({ title: nextTitle })}
-                style={styles.title}
+                style={[styles.title, { color: theme.ink }]}
                 multiline
                 submitBehavior="blurAndSubmit"
               />
@@ -262,11 +287,12 @@ export function SheetEditor({
               <TextInput
                 accessibilityLabel="Body"
                 placeholder="Start writing…"
-                placeholderTextColor={MUTED}
+                placeholderTextColor={theme.muted}
+                keyboardAppearance={theme.colorScheme}
                 value={sheet?.body ?? ''}
                 onChangeText={(body) => update({ body })}
                 multiline
-                style={styles.body}
+                style={[styles.body, { color: theme.body }]}
                 textAlignVertical="top"
               />
             </ScrollView>
@@ -291,7 +317,6 @@ export function SheetEditor({
 }
 
 const INK = '#111';
-const MUTED = '#B0B0B5';
 
 const styles = StyleSheet.create({
   root: {
@@ -318,7 +343,6 @@ const styles = StyleSheet.create({
   toolbarActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   saveButton: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 22 },
   saveLabel: { color: INK, fontSize: 16, fontWeight: '600' },
-  saveDisabled: { color: MUTED },
   saveError: { color: '#A62828', paddingHorizontal: 24, paddingTop: 4 },
   icon: {
     width: 40,
@@ -327,7 +351,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { backgroundColor: '#F2F2F2' },
   content: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 60 },
   title: {
     fontSize: 28,

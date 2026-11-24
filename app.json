@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "backgroundColor": "#000000",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.slyiiiiiii.expo-stacked-sheets"

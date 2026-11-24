@@ -1,9 +1,39 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { notePhotos } from '../data/notePhotos';
 import type { Note } from '../data/notes';
+
+type InboxPalette = {
+  background: string;
+  ink: string;
+  count: string;
+  excerpt: string;
+  date: string;
+  pressed: string;
+  separator: string;
+};
+
+const LIGHT_INBOX: InboxPalette = {
+  background: '#FFF',
+  ink: '#111',
+  count: '#8E8E93',
+  excerpt: '#626268',
+  date: '#737378',
+  pressed: '#F6F6F6',
+  separator: '#E8E8E8',
+};
+
+const DARK_INBOX: InboxPalette = {
+  background: '#141416',
+  ink: '#F5F5F7',
+  count: '#8E8E93',
+  excerpt: '#98989F',
+  date: '#76767C',
+  pressed: '#1F1F22',
+  separator: '#2C2C2E',
+};
 
 export function InboxBody({
   active,
@@ -17,16 +47,17 @@ export function InboxBody({
   onOpenNote: (noteId: string) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const palette = useColorScheme() === 'dark' ? DARK_INBOX : LIGHT_INBOX;
 
   return (
     <ScrollView
-      style={styles.root}
+      style={[styles.root, { backgroundColor: palette.background }]}
       scrollEnabled={active}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 140 }}
     >
       <View style={styles.header}>
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text accessibilityRole="header" style={[styles.title, { color: palette.ink }]}>
           Notes
         </Text>
         <Pressable
@@ -38,15 +69,16 @@ export function InboxBody({
           onPress={onNewDraft}
           style={({ pressed }) => [styles.add, pressed && styles.pressed]}
         >
-          <Ionicons name="add" size={22} color="#111" />
+          <Ionicons name="add" size={22} color={palette.ink} />
         </Pressable>
       </View>
-      <Text style={styles.count}>{notes.length} notes</Text>
+      <Text style={[styles.count, { color: palette.count }]}>{notes.length} notes</Text>
       <View style={styles.list}>
         {notes.map((note, index) => (
           <Row
             key={note.id}
             note={note}
+            palette={palette}
             last={index === notes.length - 1}
             disabled={!active}
             onPress={() => onOpenNote(note.id)}
@@ -59,11 +91,13 @@ export function InboxBody({
 
 function Row({
   note,
+  palette,
   last,
   disabled,
   onPress,
 }: {
   note: Note;
+  palette: InboxPalette;
   last: boolean;
   disabled: boolean;
   onPress: () => void;
@@ -76,21 +110,21 @@ function Row({
       accessibilityLabel={`Open ${note.title}`}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => pressed && styles.rowPressed}
+      style={({ pressed }) => pressed && { backgroundColor: palette.pressed }}
     >
       <View style={styles.row}>
         <View style={styles.rowCopy}>
-          <Text numberOfLines={1} style={styles.rowTitle}>
+          <Text numberOfLines={1} style={[styles.rowTitle, { color: palette.ink }]}>
             {note.title}
           </Text>
-          <Text numberOfLines={1} style={styles.rowExcerpt}>
+          <Text numberOfLines={1} style={[styles.rowExcerpt, { color: palette.excerpt }]}>
             {note.body.replace(/\n+/g, ' ')}
           </Text>
-          <Text style={styles.rowDate}>{note.date}</Text>
+          <Text style={[styles.rowDate, { color: palette.date }]}>{note.date}</Text>
         </View>
         {photo && <Image source={photo.source} style={styles.thumbnail} resizeMode="cover" />}
       </View>
-      {!last && <View style={styles.separator} />}
+      {!last && <View style={[styles.separator, { backgroundColor: palette.separator }]} />}
     </Pressable>
   );
 }
@@ -121,7 +155,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  rowPressed: { backgroundColor: '#F6F6F6' },
   rowCopy: { flex: 1, minWidth: 0 },
   rowTitle: { fontSize: 17, fontWeight: '600', color: '#111' },
   rowExcerpt: { marginTop: 3, fontSize: 14, color: '#626268' },

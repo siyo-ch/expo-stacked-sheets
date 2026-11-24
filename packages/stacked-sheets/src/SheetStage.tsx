@@ -26,6 +26,7 @@ import {
 import { SheetDockContent } from './SheetDockContent';
 import { SheetEditor } from './SheetEditor';
 import { useDraft, useDraftIds, useMailView, useMotion, useSheetController } from './sheetMotion';
+import { useSheetTheme } from './sheetTheme';
 import { StackedCard } from './StackedCard';
 import type { StackedSheetsProps } from './types';
 
@@ -45,6 +46,11 @@ export function SheetStage({
   const { mode, activeId } = useMailView();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const theme = useSheetTheme();
+  const dimOpacity = useSharedValue(theme.dimOpacity);
+  useEffect(() => {
+    dimOpacity.set(theme.dimOpacity);
+  }, [dimOpacity, theme.dimOpacity]);
   const { overview, scroll, editor, count, dock } = useMotion();
   const dockHeight = dock.height;
   const dockBottom = height - dock.top - dock.height;
@@ -107,18 +113,22 @@ export function SheetStage({
       ),
     };
   });
-  const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * 0.06 }));
+  const dimStyle = useAnimatedStyle(() => ({ opacity: editor.value * dimOpacity.value }));
   const depthStyle = useAnimatedStyle(() => ({ opacity: overview.value }));
   const dockStyle = useAnimatedStyle(() => ({
     opacity: 1 - overviewCardOpacity(overview.value),
   }));
   return (
-    <View style={styles.root}>
-      {renderStatusBar?.(mode)}
+    <View style={[styles.root, { backgroundColor: theme.stage }]}>
+      {renderStatusBar?.(mode, theme.colorScheme)}
       <GestureDetector gesture={pan}>
         <View style={StyleSheet.absoluteFill}>
           <Animated.View
-            style={[styles.background, inboxStyle]}
+            style={[
+              styles.background,
+              { backgroundColor: theme.background, borderColor: theme.border },
+              inboxStyle,
+            ]}
             pointerEvents={mode === 'inbox' ? 'auto' : 'none'}
             aria-hidden={mode !== 'inbox'}
             accessibilityElementsHidden={mode !== 'inbox'}
@@ -130,7 +140,7 @@ export function SheetStage({
             <Animated.View pointerEvents="none" style={[styles.dim, dimStyle]} />
             <Animated.View
               pointerEvents="none"
-              style={[styles.depthShade, depthStyle]}
+              style={[styles.depthShade, { backgroundImage: theme.depthShade }, depthStyle]}
             />
           </Animated.View>
           <View
@@ -171,7 +181,14 @@ export function SheetStage({
           accessibilityElementsHidden={mode !== 'inbox'}
           style={[
             styles.dock,
-            { top: dock.top, height: dock.height, borderRadius: dock.radius },
+            {
+              top: dock.top,
+              height: dock.height,
+              borderRadius: dock.radius,
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              shadowOpacity: theme.shadowOpacity,
+            },
             dockStyle,
           ]}
         >

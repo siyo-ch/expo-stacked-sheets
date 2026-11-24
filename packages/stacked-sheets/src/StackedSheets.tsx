@@ -10,6 +10,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { SheetStage } from './SheetStage';
 import { createSheetController, SheetMotionProvider } from './sheetMotion';
+import { SheetThemeProvider } from './sheetTheme';
 import type { SheetStackParamList, StackedSheetsProps } from './types';
 
 const Stack = createNativeStackNavigator<SheetStackParamList>();
@@ -32,40 +33,42 @@ export function StackedSheets(props: StackedSheetsProps) {
   );
 
   return (
-    <SheetMotionProvider controller={controller}>
-      <View style={styles.frame}>
-        <NavigationIndependentTree>
-          <NavigationContainer
-            ref={attachNavigator}
-            theme={theme}
-            initialState={controller.initialNavigationState}
-            onStateChange={controller.onNavigationStateChange}
-          >
-            <Stack.Navigator
-              initialRouteName="Inbox"
-              screenOptions={{
-                headerShown: false,
-                animation: 'none',
-                gestureEnabled: false,
-                fullScreenGestureEnabled: false,
-                freezeOnBlur: false,
-                contentStyle: styles.frame,
-              }}
+    <SheetThemeProvider colorScheme={props.colorScheme}>
+      <SheetMotionProvider controller={controller}>
+        <View style={styles.frame}>
+          <NavigationIndependentTree>
+            <NavigationContainer
+              ref={attachNavigator}
+              theme={theme}
+              initialState={controller.initialNavigationState}
+              onStateChange={controller.onNavigationStateChange}
             >
-              <Stack.Screen name="Inbox" component={HistoryScreen} />
-              <Stack.Screen
-                name="Compose"
-                component={HistoryScreen}
-                getId={({ params }) => params.draftId}
-              />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </NavigationIndependentTree>
-        <View collapsable={false} style={styles.stage} pointerEvents="box-none">
-          <SheetStage {...props} />
+              <Stack.Navigator
+                initialRouteName="Inbox"
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'none',
+                  gestureEnabled: false,
+                  fullScreenGestureEnabled: false,
+                  freezeOnBlur: false,
+                  contentStyle: styles.frame,
+                }}
+              >
+                <Stack.Screen name="Inbox" component={HistoryScreen} />
+                <Stack.Screen
+                  name="Compose"
+                  component={HistoryScreen}
+                  getId={({ params }) => params.draftId}
+                />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </NavigationIndependentTree>
+          <View collapsable={false} style={styles.stage} pointerEvents="box-none">
+            <SheetStage {...props} />
+          </View>
         </View>
-      </View>
-    </SheetMotionProvider>
+      </SheetMotionProvider>
+    </SheetThemeProvider>
   );
 }
 

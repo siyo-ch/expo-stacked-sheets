@@ -22,6 +22,7 @@ import {
   shouldDismissCard,
 } from './sheetLayout';
 import { useDraft, useMailView, useMotion, useSheetController } from './sheetMotion';
+import { useSheetTheme, type SheetTheme } from './sheetTheme';
 import type { Sheet, SheetIcon, StackedSheetsProps } from './types';
 
 const android = Platform.OS === 'android';
@@ -42,9 +43,10 @@ export function SheetControlIcon({
   size: number;
   renderIcon: StackedSheetsProps['renderIcon'];
 }) {
-  if (renderIcon) return renderIcon(name, size);
+  const theme = useSheetTheme();
+  if (renderIcon) return renderIcon(name, size, theme.ink);
   return (
-    <Text style={[styles.icon, { fontSize: size }]}>{iconGlyphs[name]}</Text>
+    <Text style={[styles.icon, { fontSize: size, color: theme.ink }]}>{iconGlyphs[name]}</Text>
   );
 }
 
@@ -61,6 +63,7 @@ export const StackedCard = memo(function StackedCard({
   emptyTitle: string;
 } & Pick<StackedSheetsProps, 'renderIcon' | 'renderPreview'>) {
   const { width, height } = useWindowDimensions();
+  const theme = useSheetTheme();
   const { closeDraft, selectDraft } = useSheetController();
   const sheet = useDraft(id);
   const { overview, scroll, count: animatedCount, dock } = useMotion();
@@ -191,7 +194,11 @@ export const StackedCard = memo(function StackedCard({
             projection uses the flat wrapper for touch targets. */}
         <Animated.View
           pointerEvents={android ? 'box-none' : 'none'}
-          style={[styles.paper, paperStyle]}
+          style={[
+            styles.paper,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+            paperStyle,
+          ]}
         >
           <Animated.View
             pointerEvents="none"
@@ -206,11 +213,11 @@ export const StackedCard = memo(function StackedCard({
               renderPreview ? (
                 <View style={styles.preview}>{renderPreview(sheet)}</View>
               ) : (
-                <SheetPreview sheet={sheet} emptyTitle={emptyTitle} />
+                <SheetPreview sheet={sheet} emptyTitle={emptyTitle} theme={theme} />
               )
             )}
           </Animated.View>
-          <View pointerEvents="none" style={styles.shade} />
+          <View pointerEvents="none" style={[styles.shade, { backgroundImage: theme.depthShade }]} />
           {android && openButton}
           {android && closeButton}
         </Animated.View>
@@ -220,15 +227,23 @@ export const StackedCard = memo(function StackedCard({
     </GestureDetector>
   );
 });
-function SheetPreview({ sheet, emptyTitle }: { sheet: Sheet; emptyTitle: string }) {
+function SheetPreview({
+  sheet,
+  emptyTitle,
+  theme,
+}: {
+  sheet: Sheet;
+  emptyTitle: string;
+  theme: SheetTheme;
+}) {
   const { title, body, image } = sheet;
   return (
     <View style={styles.content}>
-      <Text numberOfLines={1} style={styles.title}>
+      <Text numberOfLines={1} style={[styles.title, { color: theme.ink }]}>
         {title || emptyTitle}
       </Text>
       <View style={styles.excerpt}>
-        <Text numberOfLines={image ? 5 : 6} style={styles.body}>
+        <Text numberOfLines={image ? 5 : 6} style={[styles.body, { color: theme.previewBody }]}>
           {body}
         </Text>
         {image && <Image source={image.source} style={styles.photo} resizeMode="cover" />}

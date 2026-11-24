@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
+import { useSheetTheme } from './sheetTheme';
 import { SheetControlIcon } from './StackedCard';
 import type { StackedSheetsProps } from './types';
 
@@ -13,19 +14,20 @@ export function SheetDockContent({
   count: number;
   controlsStyle?: AnimatedStyle<{ opacity: number }>;
 }) {
+  const theme = useSheetTheme();
   const hasStack = count > 1;
 
   return (
     <View pointerEvents="none" style={styles.row}>
       <View style={[styles.titleInset, hasStack && styles.stackTitleInset]}>
-        <Text numberOfLines={1} style={styles.title}>{title}</Text>
+        <Text numberOfLines={1} style={[styles.title, { color: theme.ink }]}>{title}</Text>
       </View>
       <Animated.View style={[styles.controls, controlsStyle]}>
         <SheetControlIcon name="sheet" size={20} renderIcon={renderIcon} />
         {hasStack && (
           <View style={styles.trailing}>
-            <View style={styles.pill}>
-              <Text numberOfLines={1} style={styles.count}>{count}</Text>
+            <View style={[styles.pill, { backgroundColor: theme.pill }]}>
+              <Text numberOfLines={1} style={[styles.count, { color: theme.ink }]}>{count}</Text>
             </View>
             <SheetControlIcon name="expand" size={18} renderIcon={renderIcon} />
           </View>

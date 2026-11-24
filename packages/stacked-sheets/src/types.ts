@@ -21,6 +21,8 @@ export type InitialSheet = SheetContent & { id?: string };
 export type SheetOrigin = { x: number; y: number; width: number; height: number };
 export type SheetMode = 'inbox' | 'compose' | 'overview';
 export type SheetIcon = 'sheet' | 'expand' | 'minimize' | 'close';
+export type ResolvedSheetColorScheme = 'light' | 'dark';
+export type SheetColorScheme = ResolvedSheetColorScheme | 'system';
 
 export type SheetBackgroundProps = {
   active: boolean;
@@ -39,8 +41,9 @@ export type StackedSheetsProps = {
   renderPreview?: (sheet: Sheet) => ReactNode;
   renderEditor?: (props: SheetEditorProps) => ReactNode;
   onSaveSheet?: (sheet: Sheet) => boolean;
-  renderIcon?: (name: SheetIcon, size: number) => ReactNode;
-  renderStatusBar?: (mode: SheetMode) => ReactNode;
+  renderIcon?: (name: SheetIcon, size: number, color: string) => ReactNode;
+  renderStatusBar?: (mode: SheetMode, colorScheme: ResolvedSheetColorScheme) => ReactNode;
+  colorScheme?: SheetColorScheme;
   emptyTitle?: string;
 };
 

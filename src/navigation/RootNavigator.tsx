@@ -1,10 +1,10 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { BaseNavigationContainer, DefaultTheme, StackActions, useNavigationContainerRef } from '@react-navigation/native';
+import { BaseNavigationContainer, DarkTheme, DefaultTheme, StackActions, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { StackedSheets, type InitialSheet, type Sheet, type SheetBackgroundProps, type SheetIcon } from 'expo-stacked-sheets';
 import { useEffect, useState } from 'react';
-import { BackHandler, Platform, StyleSheet, View } from 'react-native';
+import { BackHandler, Platform, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { NOTES, type Note } from '../data/notes';
 import { asNote, loadSavedNotes, saveDraftAsNote } from '../data/savedNotes';
@@ -71,8 +71,10 @@ export function RootNavigator() {
       initialSheets={initialDrafts.filter((draft) => !savedNotes.some((note) => note.id === draft.id))}
       renderBackground={(props) => <NotesPages {...props} notes={notes} navigation={navigation} />}
       onSaveSheet={saveSheet}
-      renderStatusBar={(mode) => <StatusBar style={mode === 'overview' ? 'light' : 'dark'} animated />}
-      renderIcon={(name, size) => <Ionicons name={icons[name]} size={size} color="#111" />}
+      renderStatusBar={(mode, colorScheme) => (
+        <StatusBar style={colorScheme === 'dark' || mode === 'overview' ? 'light' : 'dark'} animated />
+      )}
+      renderIcon={(name, size, color) => <Ionicons name={icons[name]} size={size} color={color} />}
       emptyTitle="New Draft"
     />
   );
@@ -82,6 +84,22 @@ function NotesPages({ active, openSheet, notes, navigation }: SheetBackgroundPro
   notes: readonly Note[];
   navigation: ReturnType<typeof useNavigationContainerRef<NotesParamList>>;
 }) {
+  const isDark = useColorScheme() === 'dark';
+  const surface = isDark ? '#141416' : '#FFF';
+  const ink = isDark ? '#F5F5F7' : '#111';
+  const divider = isDark ? '#2C2C2E' : '#E8E8E8';
+  const baseTheme = isDark ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      background: surface,
+      card: surface,
+      text: ink,
+      border: divider,
+    },
+  };
+
   useEffect(() => {
     if (Platform.OS !== 'android' || !active) return;
 
@@ -95,8 +113,8 @@ function NotesPages({ active, openSheet, notes, navigation }: SheetBackgroundPro
   }, [active, navigation]);
 
   return (
-    <BaseNavigationContainer ref={navigation} theme={DefaultTheme}>
-      <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: '#FFF' } }}>
+    <BaseNavigationContainer ref={navigation} theme={navTheme}>
+      <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: surface } }}>
         <Stack.Screen name="Notes" options={{ headerShown: false }}>
           {({ navigation }) => (
             <InboxBody
@@ -112,14 +130,15 @@ function NotesPages({ active, openSheet, notes, navigation }: SheetBackgroundPro
           options={{
             title: '',
             headerBackTitle: 'Notes',
-            headerTintColor: '#111',
+            headerTintColor: ink,
+            headerStyle: { backgroundColor: surface },
             gestureEnabled: active,
             headerShadowVisible: Platform.OS === 'android' ? false : undefined,
           }}
         >
           {({ route }) => (
             <>
-              {Platform.OS === 'android' && <View style={styles.noteDivider} />}
+              {Platform.OS === 'android' && <View style={[styles.noteDivider, { backgroundColor: divider }]} />}
               <NoteDetail note={notes.find((note) => note.id === route.params.noteId)} />
             </>
           )}
