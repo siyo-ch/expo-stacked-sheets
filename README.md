@@ -13,6 +13,8 @@ https://github.com/user-attachments/assets/261228f0-c8bd-4038-9ed0-a47d9804354e
 
 <!-- github-demo:end -->
 
+[Try the two-sheet example on your phone with Expo Go (SDK 58).](https://snack.expo.dev/qGk1n9NXS3PwXTsShAxbf?platform=mydevice)
+
 [demo-cover]: https://raw.githubusercontent.com/siyo-ch/expo-stacked-sheets/main/assets/demo/notes-demo-cover.jpg
 [demo-video]: https://cdn.jsdelivr.net/gh/siyo-ch/expo-stacked-sheets@main/assets/demo/notes-demo.mp4
 
