@@ -1,6 +1,6 @@
 {
   "name": "expo-stacked-sheets",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "3D stacked sheets for Expo and React Native, built with Reanimated and Gesture Handler.",
   "keywords": ["expo", "react-native", "stacked-sheets", "bottom-sheet", "sheet", "3d", "reanimated", "gesture-handler", "ios", "android"],
   "license": "MIT",
